@@ -535,18 +535,43 @@ const AddQuestion = () => {
             </label>
           </div>
 
-          <button 
-            className="submit-btn" 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting 
-              ? "⏳ Saving..." 
-              : editingQuestionId 
-                ? "✏️ Update Question" 
-                : "🚀 Save Question"
-            }
-          </button>
+          <div style={{display: "flex", gap: "10px", marginBottom: "10px"}}>
+            <button
+              className="submit-btn"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              style={{flex: 1}}
+            >
+              {isSubmitting
+                ? "⏳ Saving..."
+                : editingQuestionId
+                  ? "✏️ Update Question"
+                  : "🚀 Save Question"
+              }
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                console.log("🔍 DEBUG STATE:");
+                console.log("Test:", test);
+                console.log("Question Text:", questionText);
+                console.log("Options:", options);
+                console.log("Correct Option:", correctOption);
+                alert(`DEBUG:\nTest: ${test}\nQuestion: ${questionText?.substring(0, 50)}...\nOptions: ${JSON.stringify(options, null, 2)}\nCorrect: ${correctOption}`);
+              }}
+              style={{
+                background: "#28a745",
+                color: "white",
+                border: "none",
+                padding: "10px 15px",
+                borderRadius: "5px",
+                cursor: "pointer"
+              }}
+            >
+              🔍 Debug
+            </button>
+          </div>
         </>
       )}
 
