@@ -1,12 +1,12 @@
 // utils/axiosConfig.js
 import axios from "axios";
 
-// Use relative /api path for proxy
-const BASE_URL = "/api";
+// Don't set baseURL since components already use full paths like "/api/courses"
+// This prevents double /api prefixes
+console.log("Axios configured without baseURL to prevent double /api prefix");
 
-console.log("Axios BASE_URL configured as:", BASE_URL);
-
-axios.defaults.baseURL = BASE_URL;
+// Remove baseURL to let components use their own paths
+// axios.defaults.baseURL = undefined;
 axios.defaults.withCredentials = true;
 axios.defaults.timeout = 10000;
 
