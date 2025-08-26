@@ -64,8 +64,8 @@ const AdminLogin = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button type="submit" className="admin-login__button">
-            Login
+          <button type="submit" className="admin-login__button" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
           {error && <p className="admin-login__error">{error}</p>}
         </form>
