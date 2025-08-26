@@ -1,45 +1,46 @@
 const mongoose = require("mongoose");
 
 const questionSchema = new mongoose.Schema({
-  test: {
+  testId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Test",
     required: true,
+  },
+  test: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Test",
   },
   questionText: {
     type: String,
     required: true,
   },
-  direction: {
-    type: String,
-    default: "",
-  },
   options: {
-    type: [String],
+    A: { type: String, required: true },
+    B: { type: String, required: true },
+    C: { type: String, required: true },
+    D: { type: String, required: true }
+  },
+  correctOption: {
+    type: String,
+    enum: ["A", "B", "C", "D"],
     required: true,
-    validate: [(val) => val.length >= 2, "At least 2 options required"],
-  },
-  correctOptionIndex: {
-    type: Number,
-    required: true, // 0 for A, 1 for B...
-  },
-  marks: {
-    type: Number,
-    default: 3,
-  },
-  negativeMarks: {
-    type: Number,
-    default: 1,
   },
   explanation: {
     type: String,
     default: "",
   },
-  type: { type: String, enum: ["mcq", "numeric"], lowercase: true, default: "mcq" },
-
-  order: {
+  difficulty: {
+    type: String,
+    enum: ["Easy", "Medium", "Hard"],
+    default: "Medium",
+  },
+  marks: {
     type: Number,
-    default: 0,
+    default: 2,
+  },
+  negativeMarks: {
+    type: Number,
+    default: 0.66,
   },
   isActive: {
     type: Boolean,
