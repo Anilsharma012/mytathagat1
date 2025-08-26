@@ -180,12 +180,12 @@ const AddQuestion = () => {
     // Prevent double submission
     if (isSubmitting) return;
 
-    // Validate form
+    // Validate form - if invalid, don't call API
     if (!validateForm()) return;
 
     setIsSubmitting(true);
 
-    // Prepare exact POST body as specified by user
+    // Prepare exact POST body as specified
     const questionData = {
       testId: test,
       questionText: questionText.trim(),
@@ -206,37 +206,42 @@ const AddQuestion = () => {
     try {
       const token = localStorage.getItem("adminToken");
 
-      if (editingQuestionId) {
-        await axios.put(`/api/questions/${editingQuestionId}`, questionData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Question updated successfully!");
-      } else {
-        await axios.post(`/api/questions`, questionData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Question added successfully!");
-      }
-
-      // Refresh questions list
-      const res = await axios.get(`/api/questions/${test}`, {
+      // Make exactly one POST request
+      const response = await axios.post(`/api/questions`, questionData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setQuestions(res.data.questions || []);
 
-      // Reset form
-      resetForm();
+      // Success (201 or ok:true) → green toast "Saved"
+      if (response.status === 201 || response.data?.success === true) {
+        toast.success("Saved");
+
+        // Then one refetch: GET /api/questions?testId=<TEST_ID>
+        const refetchRes = await axios.get(`/api/questions?testId=${test}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setQuestions(refetchRes.data.questions || []);
+
+        // Reset form after successful save
+        resetForm();
+      }
 
     } catch (err) {
       console.error("Submit error:", err);
-      if (err.response?.data?.message) {
-        toast.error(err.response.data.message);
-      } else {
-        toast.error("Failed to save question");
-      }
-    } finally {
-      setIsSubmitting(false);
+
+      // Extract error message in specified order
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.response?.data?.errors?.[0]?.msg ||
+                          "Save failed";
+
+      // Red toast with server message, re-enable button
+      toast.error(errorMessage);
+      setIsSubmitting(false); // Re-enable button on error
+      return; // No retry
     }
+
+    // Only disable button during success flow
+    setIsSubmitting(false);
   };
 
   const handleDelete = async (id) => {
