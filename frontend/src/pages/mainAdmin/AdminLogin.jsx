@@ -3,32 +3,40 @@ import axios from "axios";
 import "./AdminLogin.css";
 
 const BASE_URL =
-  (import.meta?.env?.VITE_API_BASE_URL || process.env.REACT_APP_API_BASE_URL || "/api");
-
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    console.log("API URL:", BASE_URL); // Debug ke liye
+    setLoading(true);
+
+    console.log("Attempting admin login with URL:", `${BASE_URL}/admin/login`);
 
     try {
-      // REACT_APP_BACKEND_URL me /api/v1 hai — isko replace kar do /api se
-      const fixedURL = BASE_URL.replace("/api/v1", "/api");
-
-      const res = await axios.post(`${fixedURL}/admin/login`, {
+      const res = await axios.post(`${BASE_URL}/admin/login`, {
         email,
         password,
       });
 
-      localStorage.setItem("adminToken", res.data.token);
-      window.location.href = "/admin/dashboard";
+      if (res.data && res.data.token) {
+        localStorage.setItem("adminToken", res.data.token);
+        console.log("Admin login successful, redirecting...");
+        window.location.href = "/admin/dashboard";
+      } else {
+        throw new Error("No token received from server");
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      console.error("Login error:", err);
+      const errorMessage = err.response?.data?.message || err.message || "Login failed";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
