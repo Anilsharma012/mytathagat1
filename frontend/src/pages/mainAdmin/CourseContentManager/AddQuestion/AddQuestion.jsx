@@ -154,48 +154,71 @@ const AddQuestion = () => {
   const validateForm = () => {
     console.log("🔍 Validating form...");
     console.log("Test:", test);
-    console.log("Question Text (HTML):", questionText);
-    console.log("Question Text (Plain):", getTextFromHTML(questionText));
-    console.log("Options:", options);
+    console.log("Question Text (raw):", questionText);
+    console.log("Question Text (type):", typeof questionText);
+    console.log("Question Text (length):", questionText?.length);
+    console.log("Options (raw):", options);
     console.log("Correct Option:", correctOption);
 
-    // Check each field individually with specific error messages
+    // Check test selection
     if (!test) {
       console.log("❌ Test not selected");
       toast.error("Please select a test");
       return false;
     }
 
-    const questionTextPlain = getTextFromHTML(questionText);
-    if (!questionTextPlain || !questionTextPlain.trim()) {
-      console.log("❌ Question text is empty");
+    // More flexible question text validation
+    let hasQuestionText = false;
+    if (questionText) {
+      // Try multiple ways to check if content exists
+      const plainText = getTextFromHTML(questionText);
+      const directTrim = questionText.trim();
+      const hasContent = plainText.trim().length > 0 || directTrim.length > 3; // Allow some HTML tags
+
+      console.log("Plain text extracted:", plainText);
+      console.log("Direct trim:", directTrim);
+      console.log("Has content:", hasContent);
+
+      hasQuestionText = hasContent;
+    }
+
+    if (!hasQuestionText) {
+      console.log("❌ Question text is empty or invalid");
       toast.error("Please enter question text");
       return false;
     }
 
-    const optionAPlain = getTextFromHTML(options.A);
-    if (!optionAPlain || !optionAPlain.trim()) {
+    // Check options with flexible validation
+    const checkOption = (optionKey, optionValue) => {
+      if (!optionValue) return false;
+
+      const plainText = getTextFromHTML(optionValue);
+      const directTrim = optionValue.trim();
+      const hasContent = plainText.trim().length > 0 || directTrim.length > 3;
+
+      console.log(`Option ${optionKey} - Plain:`, plainText, "Direct:", directTrim, "Has content:", hasContent);
+      return hasContent;
+    };
+
+    if (!checkOption('A', options.A)) {
       console.log("❌ Option A is empty");
       toast.error("Please fill Option A");
       return false;
     }
 
-    const optionBPlain = getTextFromHTML(options.B);
-    if (!optionBPlain || !optionBPlain.trim()) {
+    if (!checkOption('B', options.B)) {
       console.log("❌ Option B is empty");
       toast.error("Please fill Option B");
       return false;
     }
 
-    const optionCPlain = getTextFromHTML(options.C);
-    if (!optionCPlain || !optionCPlain.trim()) {
+    if (!checkOption('C', options.C)) {
       console.log("❌ Option C is empty");
       toast.error("Please fill Option C");
       return false;
     }
 
-    const optionDPlain = getTextFromHTML(options.D);
-    if (!optionDPlain || !optionDPlain.trim()) {
+    if (!checkOption('D', options.D)) {
       console.log("❌ Option D is empty");
       toast.error("Please fill Option D");
       return false;
