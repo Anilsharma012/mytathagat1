@@ -145,10 +145,16 @@ const AddQuestion = () => {
   }, [test]);
 
   const handleOptionChange = (optionKey, value) => {
+    console.log(`📝 Option ${optionKey} changed:`, value);
     setOptions(prev => ({
       ...prev,
       [optionKey]: value
     }));
+  };
+
+  const handleQuestionTextChange = (value) => {
+    console.log("📝 Question text changed:", value);
+    setQuestionText(value);
   };
 
   const validateForm = () => {
@@ -439,8 +445,11 @@ const AddQuestion = () => {
               ref={editor}
               config={joditConfig}
               value={questionText}
-              onChange={setQuestionText}
+              onChange={handleQuestionTextChange}
             />
+            <small style={{color: "#666", fontSize: "12px"}}>
+              Debug: Current length = {questionText?.length || 0}
+            </small>
           </div>
 
           <div className="form-group">
