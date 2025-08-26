@@ -144,6 +144,12 @@ const AddQuestion = () => {
   };
 
   const validateForm = () => {
+    console.log("🔍 Validating form...");
+    console.log("Test:", test);
+    console.log("Question Text:", questionText?.trim());
+    console.log("Options:", options);
+    console.log("Correct Option:", correctOption);
+
     // Check all required fields
     if (!test ||
         !questionText.trim() ||
@@ -153,9 +159,11 @@ const AddQuestion = () => {
         !options.D.trim() ||
         !correctOption ||
         !["A", "B", "C", "D"].includes(correctOption)) {
+      console.log("❌ Validation failed - missing required fields");
       toast.error("Fill all fields");
       return false;
     }
+    console.log("✅ Validation passed");
     return true;
   };
 
