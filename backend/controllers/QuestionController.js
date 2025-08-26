@@ -71,7 +71,12 @@ const createQuestion = async (req, res) => {
 // ✅ Get All Questions for a Test
 const getQuestionsByTest = async (req, res) => {
   try {
-    const { testId } = req.params;
+    // Support both query parameter (?testId=) and path parameter (/:testId)
+    const testId = req.query.testId || req.params.testId;
+
+    if (!testId) {
+      return res.status(400).json({ success: false, message: "Test ID is required" });
+    }
 
     if (!mongoose.Types.ObjectId.isValid(testId)) {
       return res.status(400).json({ success: false, message: "Invalid test ID" });
