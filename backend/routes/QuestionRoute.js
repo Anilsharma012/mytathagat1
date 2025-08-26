@@ -19,7 +19,10 @@ const { checkPermission } = require("../middleware/permissionMiddleware");
 // ✅ Create question
 router.post("/", authMiddleware, checkPermission("question_create"), createQuestion);
 
-// ✅ Get questions of a test
+// ✅ Get questions of a test (query parameter format)
+router.get("/", authMiddleware, checkPermission("question_read"), getQuestionsByTest);
+
+// ✅ Get questions of a test (path parameter format - for backward compatibility)
 router.get("/:testId", authMiddleware, checkPermission("question_read"), getQuestionsByTest);
 
 // ✅ Update question
