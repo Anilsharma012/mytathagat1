@@ -33,6 +33,14 @@ const AddQuestion = () => {
 
   const token = localStorage.getItem("adminToken");
 
+  // Helper function to extract text from HTML content
+  const getTextFromHTML = (htmlContent) => {
+    if (!htmlContent) return "";
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlContent;
+    return tempDiv.textContent || tempDiv.innerText || "";
+  };
+
   const joditConfig = {
     readonly: false,
     toolbarSticky: false,
@@ -146,7 +154,8 @@ const AddQuestion = () => {
   const validateForm = () => {
     console.log("🔍 Validating form...");
     console.log("Test:", test);
-    console.log("Question Text:", questionText?.trim());
+    console.log("Question Text (HTML):", questionText);
+    console.log("Question Text (Plain):", getTextFromHTML(questionText));
     console.log("Options:", options);
     console.log("Correct Option:", correctOption);
 
@@ -157,31 +166,36 @@ const AddQuestion = () => {
       return false;
     }
 
-    if (!questionText || !questionText.trim()) {
+    const questionTextPlain = getTextFromHTML(questionText);
+    if (!questionTextPlain || !questionTextPlain.trim()) {
       console.log("❌ Question text is empty");
       toast.error("Please enter question text");
       return false;
     }
 
-    if (!options.A || !options.A.trim()) {
+    const optionAPlain = getTextFromHTML(options.A);
+    if (!optionAPlain || !optionAPlain.trim()) {
       console.log("❌ Option A is empty");
       toast.error("Please fill Option A");
       return false;
     }
 
-    if (!options.B || !options.B.trim()) {
+    const optionBPlain = getTextFromHTML(options.B);
+    if (!optionBPlain || !optionBPlain.trim()) {
       console.log("❌ Option B is empty");
       toast.error("Please fill Option B");
       return false;
     }
 
-    if (!options.C || !options.C.trim()) {
+    const optionCPlain = getTextFromHTML(options.C);
+    if (!optionCPlain || !optionCPlain.trim()) {
       console.log("❌ Option C is empty");
       toast.error("Please fill Option C");
       return false;
     }
 
-    if (!options.D || !options.D.trim()) {
+    const optionDPlain = getTextFromHTML(options.D);
+    if (!optionDPlain || !optionDPlain.trim()) {
       console.log("❌ Option D is empty");
       toast.error("Please fill Option D");
       return false;
