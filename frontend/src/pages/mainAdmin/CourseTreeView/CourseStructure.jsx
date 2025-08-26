@@ -183,14 +183,29 @@ const TestList = ({ topicId }) => {
                   </div>
                   {q.image && <img src={`/uploads/${q.image}`} alt="question-img" className="tz-question-image" />}
                   <ul className="tz-options-list">
-                    {q.options.map((opt, i) => (
-                      <li
-                        key={i}
-                        className={`tz-option-item ${q.correctOptionIndex === i ? "correct" : ""}`}
-                      >
-                        {i + 1}. {opt}
-                      </li>
-                    ))}
+                    {q.options && typeof q.options === 'object' ? (
+                      // Handle new object-based options format
+                      Object.entries(q.options).map(([key, value]) => (
+                        <li
+                          key={key}
+                          className={`tz-option-item ${q.correctOption === key ? "correct" : ""}`}
+                        >
+                          {key}. <span dangerouslySetInnerHTML={{ __html: value }} />
+                        </li>
+                      ))
+                    ) : q.options && Array.isArray(q.options) ? (
+                      // Handle legacy array-based options format
+                      q.options.map((opt, i) => (
+                        <li
+                          key={i}
+                          className={`tz-option-item ${q.correctOptionIndex === i ? "correct" : ""}`}
+                        >
+                          {i + 1}. {opt}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="tz-option-item">No options available</li>
+                    )}
                   </ul>
                   {q.explanation && (
                     <div className="tz-explanation">
