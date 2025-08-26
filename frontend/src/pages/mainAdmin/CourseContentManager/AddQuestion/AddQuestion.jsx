@@ -150,19 +150,55 @@ const AddQuestion = () => {
     console.log("Options:", options);
     console.log("Correct Option:", correctOption);
 
-    // Check all required fields
-    if (!test ||
-        !questionText.trim() ||
-        !options.A.trim() ||
-        !options.B.trim() ||
-        !options.C.trim() ||
-        !options.D.trim() ||
-        !correctOption ||
-        !["A", "B", "C", "D"].includes(correctOption)) {
-      console.log("❌ Validation failed - missing required fields");
-      toast.error("Fill all fields");
+    // Check each field individually with specific error messages
+    if (!test) {
+      console.log("❌ Test not selected");
+      toast.error("Please select a test");
       return false;
     }
+
+    if (!questionText || !questionText.trim()) {
+      console.log("❌ Question text is empty");
+      toast.error("Please enter question text");
+      return false;
+    }
+
+    if (!options.A || !options.A.trim()) {
+      console.log("❌ Option A is empty");
+      toast.error("Please fill Option A");
+      return false;
+    }
+
+    if (!options.B || !options.B.trim()) {
+      console.log("❌ Option B is empty");
+      toast.error("Please fill Option B");
+      return false;
+    }
+
+    if (!options.C || !options.C.trim()) {
+      console.log("❌ Option C is empty");
+      toast.error("Please fill Option C");
+      return false;
+    }
+
+    if (!options.D || !options.D.trim()) {
+      console.log("❌ Option D is empty");
+      toast.error("Please fill Option D");
+      return false;
+    }
+
+    if (!correctOption) {
+      console.log("❌ Correct option not selected");
+      toast.error("Please select the correct option");
+      return false;
+    }
+
+    if (!["A", "B", "C", "D"].includes(correctOption)) {
+      console.log("❌ Invalid correct option:", correctOption);
+      toast.error("Please select a valid correct option (A, B, C, or D)");
+      return false;
+    }
+
     console.log("✅ Validation passed");
     return true;
   };
