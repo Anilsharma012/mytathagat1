@@ -129,7 +129,7 @@ const AddQuestion = () => {
     const token = localStorage.getItem("adminToken");
 
     axios
-      .get(`/api/questions/${test}`, {
+      .get(`/api/questions?testId=${test}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setQuestions(res.data.questions || []))
