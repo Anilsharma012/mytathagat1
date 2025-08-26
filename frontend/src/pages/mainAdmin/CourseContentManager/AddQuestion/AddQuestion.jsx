@@ -144,24 +144,16 @@ const AddQuestion = () => {
   };
 
   const validateForm = () => {
-    if (!test) {
-      toast.error('Please select a test');
-      return false;
-    }
-    if (!questionText.trim()) {
-      toast.error('Question text cannot be empty');
-      return false;
-    }
-    if (!options.A.trim() || !options.B.trim() || !options.C.trim() || !options.D.trim()) {
-      toast.error('All options must be provided');
-      return false;
-    }
-    if (!correctOption) {
-      toast.error('Please select the correct option');
-      return false;
-    }
-    if (!["A", "B", "C", "D"].includes(correctOption)) {
-      toast.error('Correct option must be A, B, C, or D');
+    // Check all required fields
+    if (!test ||
+        !questionText.trim() ||
+        !options.A.trim() ||
+        !options.B.trim() ||
+        !options.C.trim() ||
+        !options.D.trim() ||
+        !correctOption ||
+        !["A", "B", "C", "D"].includes(correctOption)) {
+      toast.error("Fill all fields");
       return false;
     }
     return true;
