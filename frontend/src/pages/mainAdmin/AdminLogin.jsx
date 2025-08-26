@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./AdminLogin.css";
 
-const BASE_URL = "/api";
-
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,10 +13,10 @@ const AdminLogin = () => {
     setError("");
     setLoading(true);
 
-    console.log("Attempting admin login with URL:", `${BASE_URL}/admin/login`);
+    console.log("Attempting admin login with URL:", "/api/admin/login");
 
     try {
-      const res = await axios.post(`${BASE_URL}/admin/login`, {
+      const res = await axios.post("/admin/login", {
         email,
         password,
       });
