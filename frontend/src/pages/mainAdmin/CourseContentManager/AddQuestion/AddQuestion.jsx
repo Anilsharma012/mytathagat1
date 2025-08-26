@@ -255,15 +255,15 @@ const AddQuestion = () => {
     // Prepare exact POST body as specified
     const questionData = {
       testId: test,
-      questionText: questionText.trim(),
+      questionText: questionText, // Keep HTML for rich content
       options: {
-        A: options.A.trim(),
-        B: options.B.trim(),
-        C: options.C.trim(),
-        D: options.D.trim()
+        A: options.A, // Keep HTML for rich content
+        B: options.B,
+        C: options.C,
+        D: options.D
       },
       correctOption,
-      explanation: explanation.trim(),
+      explanation: explanation, // Keep HTML for rich content
       difficulty,
       marks: Number(marks),
       negativeMarks: Number(negativeMarks),
