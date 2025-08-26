@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   BrowserRouter,
   Route,
   Routes,
   Navigate,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import axios from "axios";
 import DevNotification from "./components/DevNotification/DevNotification";
 
 
