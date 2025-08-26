@@ -7,6 +7,8 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import axios from "axios";
 import DevNotification from "./components/DevNotification/DevNotification";
@@ -342,6 +344,17 @@ const App = () => {
       <DevNotification />
       <BrowserRouter>
         <AppContent />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </BrowserRouter>
     </ErrorBoundary>
   );
