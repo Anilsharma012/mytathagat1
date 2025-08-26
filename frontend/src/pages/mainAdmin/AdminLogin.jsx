@@ -16,7 +16,7 @@ const AdminLogin = () => {
     console.log("Attempting admin login with URL:", "/api/admin/login");
 
     try {
-      const res = await axios.post("/admin/login", {
+      const res = await axios.post("/api/admin/login", {
         email,
         password,
       });
