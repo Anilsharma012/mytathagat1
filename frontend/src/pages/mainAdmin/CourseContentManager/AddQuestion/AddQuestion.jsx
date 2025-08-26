@@ -177,12 +177,21 @@ const AddQuestion = () => {
   };
 
   const handleSubmit = async () => {
+    console.log("🚀 Save button clicked!");
+
     // Prevent double submission
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log("⏳ Already submitting, returning...");
+      return;
+    }
 
     // Validate form - if invalid, don't call API
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log("❌ Validation failed");
+      return;
+    }
 
+    console.log("✅ Validation passed, submitting...");
     setIsSubmitting(true);
 
     // Prepare exact POST body as specified
@@ -203,16 +212,23 @@ const AddQuestion = () => {
       isActive
     };
 
+    console.log("📝 Question data to send:", questionData);
+
     try {
       const token = localStorage.getItem("adminToken");
+      console.log("🔑 Token exists:", !!token);
 
       // Make exactly one POST request
+      console.log("📡 Making POST request to /api/questions");
       const response = await axios.post(`/api/questions`, questionData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log("✅ Response received:", response.status, response.data);
+
       // Success (201 or ok:true) → green toast "Saved"
       if (response.status === 201 || response.data?.success === true) {
+        console.log("🎉 Success! Showing toast and refetching...");
         toast.success("Saved");
 
         // Then one refetch: GET /api/questions?testId=<TEST_ID>
