@@ -1,4 +1,6 @@
 const User = require("../models/UserSchema");
+const Payment = require("../models/Payment");
+const Receipt = require("../models/Receipt");
 const jwt = require("jsonwebtoken");
 const Course =require("../models/course/Course")
 const Razorpay = require("razorpay");
@@ -544,7 +546,7 @@ exports.verifyToken = async (req, res) => {
 
 //     await user.save();
 //     res.status(200).json({ success: true, message: "Payment verified & course unlocked", enrolledCourses: user.enrolledCourses });
-//     console.log(`✅ User saved with unlocked courses:`, user.enrolledCourses);
+//     console.log(`�� User saved with unlocked courses:`, user.enrolledCourses);
 
 //   } catch (err) {
 //     console.error("❌ Verify & Unlock error:", err);
