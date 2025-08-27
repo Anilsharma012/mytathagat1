@@ -596,6 +596,7 @@ exports.getUserReceipts = async (req, res) => {
 exports.downloadReceipt = async (req, res) => {
   try {
     const { receiptId } = req.params;
+    const { format = 'json' } = req.query; // json, html, or text
 
     const receipt = await Receipt.findById(receiptId)
       .populate('paymentId')
@@ -619,13 +620,36 @@ exports.downloadReceipt = async (req, res) => {
     // Mark as downloaded
     await receipt.markAsDownloaded();
 
-    // Return receipt data (frontend can generate PDF)
+    // Get receipt data
     const receiptData = receipt.getReceiptData();
 
+    if (format === 'html') {
+      const { generateReceiptHTML } = require('../utils/receiptGenerator');
+      const html = generateReceiptHTML(receiptData);
+
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `inline; filename="receipt-${receipt.receiptNumber}.html"`);
+      return res.send(html);
+    }
+
+    if (format === 'text') {
+      const { generateReceiptText } = require('../utils/receiptGenerator');
+      const text = generateReceiptText(receiptData);
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.txt"`);
+      return res.send(text);
+    }
+
+    // Default JSON response
     res.status(200).json({
       success: true,
       receipt: receiptData,
-      downloadCount: receipt.downloadCount
+      downloadCount: receipt.downloadCount,
+      formats: {
+        html: `/api/user/receipt/${receiptId}/download?format=html`,
+        text: `/api/user/receipt/${receiptId}/download?format=text`
+      }
     });
   } catch (err) {
     console.error("❌ Download receipt error:", err);

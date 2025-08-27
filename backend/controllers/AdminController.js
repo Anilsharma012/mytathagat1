@@ -341,6 +341,7 @@ exports.updateStudentCourseStatus = async (req, res) => {
 exports.downloadStudentReceipt = async (req, res) => {
   try {
     const { receiptId } = req.params;
+    const { format = 'json' } = req.query; // json, html, or text
 
     const receipt = await Receipt.findById(receiptId)
       .populate('paymentId')
@@ -357,9 +358,28 @@ exports.downloadStudentReceipt = async (req, res) => {
     // Mark as downloaded
     await receipt.markAsDownloaded();
 
-    // Return receipt data
+    // Get receipt data
     const receiptData = receipt.getReceiptData();
 
+    if (format === 'html') {
+      const { generateReceiptHTML } = require('../utils/receiptGenerator');
+      const html = generateReceiptHTML(receiptData);
+
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `inline; filename="receipt-${receipt.receiptNumber}.html"`);
+      return res.send(html);
+    }
+
+    if (format === 'text') {
+      const { generateReceiptText } = require('../utils/receiptGenerator');
+      const text = generateReceiptText(receiptData);
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.txt"`);
+      return res.send(text);
+    }
+
+    // Default JSON response
     res.status(200).json({
       success: true,
       receipt: receiptData,
@@ -367,6 +387,10 @@ exports.downloadStudentReceipt = async (req, res) => {
         name: receipt.userId.name,
         email: receipt.userId.email,
         phone: receipt.userId.phoneNumber
+      },
+      formats: {
+        html: `/api/admin/receipt/${receiptId}/download?format=html`,
+        text: `/api/admin/receipt/${receiptId}/download?format=text`
       }
     });
   } catch (error) {
