@@ -796,6 +796,7 @@ app.use("/api/discussions", discussionRoutes);
 app.use("/api/admin/discussions", adminDiscussionRoutes);
 app.use("/api/mock-tests", mockTestRoutes);
 app.use("/api/admin/mock-tests", adminMockTestRoutes);
+app.use("/api/progress", require("./routes/UserProgressRoute"));
 app.use("/api/sample", require("./routes/sampleData"));
 app.use("/api/demo", require("./routes/demoRoutes"));
 app.use("/api/user", require("./routes/userRoutes"));
