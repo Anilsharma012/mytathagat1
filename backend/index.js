@@ -555,6 +555,7 @@ app.use("/api/admin/mock-tests", adminMockTestRoutes);
 app.use("/api/sample", require("./routes/sampleData"));
 app.use("/api/demo", require("./routes/demoRoutes"));
 app.use("/api/user", require("./routes/userRoutes"));
+app.use("/api/test", require("./routes/testAuth"));
 // app.use("/api/practice-tests", practiceTestRoutes);
 
 // ======================= Global Error Handler ==========================
