@@ -686,24 +686,46 @@ app.get("/api/dev-payment/my-courses", async (req, res) => {
         console.log('🔧 Development my-courses requested');
 
         const User = require('./models/UserSchema');
-        const demoUserId = '507f1f77bcf86cd799439011';
-        const demoUser = await User.findById(demoUserId).populate('enrolledCourses.courseId');
+
+        // First try to find demo user by email (consistent with other endpoints)
+        const demoEmail = 'demo@test.com';
+        let demoUser = await User.findOne({ email: demoEmail }).populate('enrolledCourses.courseId');
+
+        // If not found, try by hardcoded ID as fallback
+        if (!demoUser) {
+            const demoUserId = '507f1f77bcf86cd799439011';
+            demoUser = await User.findById(demoUserId).populate('enrolledCourses.courseId');
+        }
+
+        console.log('👤 Demo user found:', demoUser ? demoUser._id : 'NOT FOUND');
 
         if (!demoUser) {
+            console.log('⚠️ No demo user found, returning empty courses');
             return res.status(200).json({
                 success: true,
                 courses: []
             });
         }
 
+        console.log('📚 Demo user enrolled courses:', demoUser.enrolledCourses);
+        console.log('📊 Total enrolled courses count:', demoUser.enrolledCourses.length);
+
         const unlockedCourses = demoUser.enrolledCourses
-            .filter(c => c.status === "unlocked" && c.courseId)
+            .filter(c => {
+                console.log('🔍 Dev endpoint checking course:', c);
+                console.log('   - Status:', c.status);
+                console.log('   - CourseId:', c.courseId);
+                return c.status === "unlocked" && c.courseId;
+            })
             .map(c => ({
                 _id: c._id,
                 status: c.status,
                 enrolledAt: c.enrolledAt,
                 courseId: c.courseId,
             }));
+
+        console.log('🎯 Dev endpoint filtered unlocked courses:', unlockedCourses);
+        console.log('📊 Dev endpoint returning courses count:', unlockedCourses.length);
 
         res.status(200).json({
             success: true,
