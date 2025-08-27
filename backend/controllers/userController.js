@@ -254,6 +254,42 @@ exports.unlockCourseForStudent = async (req, res) => {
 exports.getUnlockedCourses = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log('🔍 getUnlockedCourses called for user:', userId);
+
+    // Development bypass - create demo user if it doesn't exist
+    if (process.env.NODE_ENV === 'development' || userId === '507f1f77bcf86cd799439011') {
+      console.log('🔧 Development mode - handling demo user');
+
+      let demoUser = await User.findOne({ email: 'demo@test.com' });
+      if (!demoUser) {
+        demoUser = new User({
+          email: 'demo@test.com',
+          phoneNumber: '9999999999',
+          name: 'Demo Student',
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          city: 'Demo City',
+          gender: 'Male',
+          dob: new Date('1995-01-01'),
+          selectedCategory: 'CAT',
+          selectedExam: 'CAT 2025',
+          enrolledCourses: []
+        });
+        await demoUser.save();
+        console.log('✅ Demo user created with ID:', demoUser._id);
+      }
+
+      const unlockedCourses = demoUser.enrolledCourses
+        .filter(c => c.status === "unlocked" && c.courseId)
+        .map(c => ({
+          _id: c._id,
+          status: c.status,
+          enrolledAt: c.enrolledAt,
+          courseId: c.courseId,
+        }));
+
+      return res.status(200).json({ success: true, courses: unlockedCourses });
+    }
 
     // Validate userId format - return empty array for invalid IDs instead of 400 error
     const mongoose = require('mongoose');

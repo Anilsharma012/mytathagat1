@@ -794,6 +794,13 @@ const loadMyCourses = async () => {
                   >
                     <FiPlay /> Enroll Now
                   </button>
+                  <button
+                    className="preview-btn"
+                    onClick={() => handleDemoPurchase(course)}
+                    style={{ backgroundColor: '#4CAF50', color: 'white' }}
+                  >
+                    🔧 Demo Buy
+                  </button>
                   <button className="preview-btn">
                     <FiEye /> Preview
                   </button>
