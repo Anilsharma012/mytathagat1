@@ -794,8 +794,26 @@ const loadMyCourses = async () => {
         </div>
       ) : (
         <div className="courses-grid">
-          {myCourses.map((enrollmentData) => {
-            const course = enrollmentData.courseId || enrollmentData;
+          {myCourses.map((enrollmentData, index) => {
+            // Handle both populated courseId objects and string IDs
+            let course = enrollmentData.courseId || enrollmentData;
+
+            // If courseId is just a string, try to find the course in available courses
+            if (typeof course === 'string') {
+              const foundCourse = courses.find(c => c._id === course);
+              course = foundCourse || {
+                _id: course,
+                name: 'Course Details Loading...',
+                description: 'Course information is being loaded.',
+                thumbnail: 'default-course.png'
+              };
+            }
+
+            // Ensure course has required properties
+            if (!course._id) {
+              course._id = enrollmentData._id || `course-${index}`;
+            }
+
             return (
               <div key={course._id} className="course-card enrolled">
                 <div className="course-thumbnail">
