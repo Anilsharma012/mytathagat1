@@ -275,6 +275,142 @@ const loadMyCourses = async () => {
     }
   }, [activeSection]);
 
+  // Function to load payment history
+  const loadPaymentHistory = async () => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      console.warn('⚠️ No auth token found. Cannot load payment history.');
+      setPaymentHistory([]);
+      return;
+    }
+
+    setPaymentHistoryLoading(true);
+
+    try {
+      const response = await fetch('/api/user/payment/history', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn(`⚠️ Payment history API responded with status ${response.status}`);
+        setPaymentHistory([]);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("📦 Payment History Response:", data);
+
+      if (data.success && Array.isArray(data.payments)) {
+        setPaymentHistory(data.payments);
+      } else {
+        setPaymentHistory([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading payment history:', error);
+      setPaymentHistory([]);
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  };
+
+  // Function to load receipts
+  const loadReceipts = async () => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      console.warn('⚠️ No auth token found. Cannot load receipts.');
+      setReceipts([]);
+      return;
+    }
+
+    setReceiptsLoading(true);
+
+    try {
+      const response = await fetch('/api/user/receipts', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn(`⚠️ Receipts API responded with status ${response.status}`);
+        setReceipts([]);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("📦 Receipts Response:", data);
+
+      if (data.success && Array.isArray(data.receipts)) {
+        setReceipts(data.receipts);
+      } else {
+        setReceipts([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading receipts:', error);
+      setReceipts([]);
+    } finally {
+      setReceiptsLoading(false);
+    }
+  };
+
+  // Function to download receipt
+  const downloadReceipt = async (receiptId, format = 'html') => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      alert('Please login to download receipt');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/user/receipt/${receiptId}/download?format=${format}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download receipt');
+      }
+
+      if (format === 'html') {
+        const html = await response.text();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${receiptId}.html`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else if (format === 'text') {
+        const text = await response.text();
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${receiptId}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('❌ Error downloading receipt:', error);
+      alert('Failed to download receipt. Please try again.');
+    }
+  };
+
   // Handle demo purchase for testing
   const handleDemoPurchase = async (course) => {
     const authToken = localStorage.getItem('authToken');
