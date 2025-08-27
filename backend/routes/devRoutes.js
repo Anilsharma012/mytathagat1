@@ -16,26 +16,28 @@ router.post('/unlock-course', async (req, res) => {
       });
     }
 
-    // Find or create demo user
-    let demoUser = await User.findOne({ email: 'demo@test.com' });
-    
-    if (!demoUser) {
-      demoUser = new User({
-        email: 'demo@test.com',
-        phoneNumber: '9999999999',
-        name: 'Demo Student',
-        isEmailVerified: true,
-        isPhoneVerified: true,
-        city: 'Demo City',
-        gender: 'Male',
-        dob: new Date('1995-01-01'),
-        selectedCategory: 'CAT',
-        selectedExam: 'CAT 2025',
-        enrolledCourses: []
-      });
-      await demoUser.save();
-      console.log('✅ Demo user created');
-    }
+    // Find or create demo user with atomic upsert
+    const demoEmail = 'demo@test.com';
+    let demoUser = await User.findOneAndUpdate(
+      { email: demoEmail },
+      {
+        $setOnInsert: {
+          email: demoEmail,
+          phoneNumber: '9999999999',
+          name: 'Demo Student',
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          city: 'Demo City',
+          gender: 'Male',
+          dob: new Date('1995-01-01'),
+          selectedCategory: 'CAT',
+          selectedExam: 'CAT 2025',
+          enrolledCourses: []
+        }
+      },
+      { upsert: true, new: true }
+    );
+    console.log('✅ Demo user ready:', demoUser._id);
 
     // Check if course is already unlocked
     const existingCourse = demoUser.enrolledCourses.find(
