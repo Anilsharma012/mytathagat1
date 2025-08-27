@@ -221,28 +221,6 @@ exports.getStudentCourseStructure = async (req, res) => {
     const topics = await Topic.find({ courseId }).sort({ order: 1 });
     const tests = await Test.find({ courseId }).sort({ order: 1 });
 
-    console.log('📚 Course structure data for course:', courseId);
-    console.log('📊 Subjects found:', subjects.length);
-    console.log('📊 Chapters found:', chapters.length);
-    console.log('📊 Topics found:', topics.length);
-    console.log('📊 Tests found:', tests.length);
-
-    subjects.forEach((subject, i) => {
-      console.log(`📖 Subject ${i}: ${subject.name} (ID: ${subject._id})`);
-    });
-
-    chapters.forEach((chapter, i) => {
-      console.log(`📘 Chapter ${i}: ${chapter.name} (ID: ${chapter._id}, SubjectID: ${chapter.subjectId})`);
-    });
-
-    topics.forEach((topic, i) => {
-      console.log(`📝 Topic ${i}: ${topic.name} (ID: ${topic._id}, ChapterID: ${topic.chapterId})`);
-    });
-
-    tests.forEach((test, i) => {
-      console.log(`🧪 Test ${i}: ${test.title || test.name} (ID: ${test._id}, TopicID: ${test.topicId})`);
-    });
-
     // Organize the structure
     const courseStructure = subjects.map(subject => ({
       ...subject.toObject(),
@@ -258,17 +236,6 @@ exports.getStudentCourseStructure = async (req, res) => {
             }))
         }))
     }));
-
-    console.log('🎯 Final organized course structure:');
-    courseStructure.forEach((subject, i) => {
-      console.log(`🎯 Subject ${i}: ${subject.name} (Chapters: ${subject.chapters.length})`);
-      subject.chapters.forEach((chapter, j) => {
-        console.log(`   Chapter ${j}: ${chapter.name} (Topics: ${chapter.topics.length})`);
-        chapter.topics.forEach((topic, k) => {
-          console.log(`     Topic ${k}: ${topic.name} (Tests: ${topic.tests.length})`);
-        });
-      });
-    });
 
     res.status(200).json({
       success: true,
