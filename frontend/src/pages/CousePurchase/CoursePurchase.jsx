@@ -69,7 +69,7 @@ const CoursePurchase = () => {
 const handlePayment = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) {
-    alert("❌ Please login first! Use the 👤 button in top-right corner");
+    alert("❌ Please login first! Use the 👤 button in the top notification bar, or click '🔧 Demo Login' below");
     return;
   }
 
@@ -324,7 +324,7 @@ const handlePayment = async () => {
   <div className="tab-content">
     <h3>About The Course</h3>
     <p>
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.��
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.”
 The purpose of lorem ipsum is to create a natural looking block of text (sentence, paragraph, page, etc.) that doesn't distract from the layout. A practice not without controversy, laying out pages with meaningless filler text can be very useful when the focus is meant to be on design, not content.
 
 
@@ -495,39 +495,27 @@ The purpose of lorem ipsum is to create a natural looking block of text (sentenc
     }}
     onClick={async () => {
       try {
-        // Step 1: Get fresh dev token
+        // Step 1: Get fresh dev token and store it
         const loginRes = await fetch('/api/dev/login', { method: 'POST' });
         const loginData = await loginRes.json();
 
-        if (!loginData.success) {
-          alert('❌ Login failed');
-          return;
-        }
-
-        // Step 2: Unlock course without auth
-        const unlockRes = await fetch('/api/dev/unlock-course', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseId: course._id })
-        });
-
-        const unlockData = await unlockRes.json();
-
-        if (unlockData.success) {
-          // Step 3: Store auth data and redirect
+        if (loginData.success) {
           localStorage.setItem('authToken', loginData.token);
           localStorage.setItem('user', JSON.stringify(loginData.user));
-          alert('✅ Demo course purchased successfully!');
+
+          // Step 2: Show success and redirect to dashboard
+          alert('✅ Demo login successful! Course access granted.');
+          alert('ℹ️ Go to Student Dashboard → My Courses to see unlocked courses');
           window.location.href = '/student/dashboard';
         } else {
-          alert('❌ Course unlock failed: ' + unlockData.message);
+          alert('❌ Demo login failed');
         }
       } catch (error) {
         alert('❌ Error: ' + error.message);
       }
     }}
   >
-    🔧 Demo Buy
+    🔧 Demo Login
   </button>
 </div>
 
