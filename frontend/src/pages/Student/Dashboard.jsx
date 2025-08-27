@@ -313,7 +313,7 @@ const loadMyCourses = async () => {
         // Refresh my courses
         setTimeout(() => {
           loadMyCourses();
-          setActiveSection('courses'); // Switch to My Courses
+          setActiveSection('my-courses'); // Switch to My Courses
         }, 1000);
       } else {
         alert('❌ Demo purchase failed: ' + data.message);
