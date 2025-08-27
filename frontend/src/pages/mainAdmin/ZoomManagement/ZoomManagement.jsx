@@ -110,7 +110,7 @@ const ZoomManagement = () => {
                     <option value="">Select a course</option>
                     {courses.map(course => (
                         <option key={course._id} value={course._id}>
-                            {course.title}
+                            {course.name || course.title || 'Unnamed Course'}
                         </option>
                     ))}
                 </select>
@@ -202,7 +202,7 @@ const ZoomManagement = () => {
                                     <option value="">Select a course</option>
                                     {courses.map(course => (
                                         <option key={course._id} value={course._id}>
-                                            {course.title}
+                                            {course.name || course.title || 'Unnamed Course'}
                                         </option>
                                     ))}
                                 </select>
