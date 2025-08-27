@@ -259,10 +259,31 @@ exports.getStudentCourseStructure = async (req, res) => {
             .filter(topic => topic.chapterId.toString() === chapter._id.toString())
             .map(topic => ({
               ...topic.toObject(),
-              tests: tests.filter(test => test.topicId.toString() === topic._id.toString())
+              tests: tests.filter(test => test.topic && test.topic.toString() === topic._id.toString())
             }))
         }))
     }));
+
+    // Also check for tests that might be directly associated with chapters (if no topics exist)
+    courseStructure.forEach(subject => {
+      subject.chapters.forEach(chapter => {
+        if (chapter.topics.length === 0) {
+          // If no topics, attach tests directly to chapter
+          const chapterTests = tests.filter(test => test.chapter && test.chapter.toString() === chapter._id.toString());
+          if (chapterTests.length > 0) {
+            // Create a default topic for chapter-level tests
+            chapter.topics.push({
+              _id: `${chapter._id}_tests`,
+              name: `${chapter.name} Tests`,
+              chapterId: chapter._id,
+              tests: chapterTests,
+              createdAt: chapter.createdAt,
+              updatedAt: chapter.updatedAt
+            });
+          }
+        }
+      });
+    });
 
     res.status(200).json({
       success: true,
