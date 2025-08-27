@@ -157,10 +157,22 @@ const handlePayment = async () => {
       try {
         const checkData = await checkRes.json();
         const courseId = (course && course._id) || null;
-        // Fix: Compare against courseId._id (populated course object) not c._id (enrollment ID)
-        const alreadyUnlocked = courseId && checkData.courses && checkData.courses.some(c =>
-          c.courseId && (c.courseId._id || c.courseId).toString() === courseId.toString()
+        console.log('🔍 Purchase check - Course ID:', courseId);
+        console.log('📚 User enrolled courses:', checkData.courses);
+
+        // Filter out demo enrollments and check real enrollments only
+        const realEnrollments = (checkData.courses || []).filter(c =>
+          c._id && !c._id.toString().startsWith('demo_')
         );
+
+        const alreadyUnlocked = courseId && realEnrollments.some(c => {
+          const enrolledCourseId = (c.courseId && c.courseId._id) || c.courseId;
+          const matches = enrolledCourseId && enrolledCourseId.toString() === courseId.toString();
+          console.log(`📋 Purchase check - Comparing ${enrolledCourseId} with ${courseId}: ${matches}`);
+          return matches;
+        });
+
+        console.log('✅ Final purchase check result:', alreadyUnlocked);
 
         if (alreadyUnlocked) {
           alert("✅ You have already purchased/unlocked this course.");
@@ -560,7 +572,7 @@ The purpose of lorem ipsum is to create a natural looking block of text (sentenc
         }
       } catch (error) {
         console.error('Demo purchase error:', error);
-        alert('❌ Error: ' + error.message);
+        alert('��� Error: ' + error.message);
       }
     }}
   >
