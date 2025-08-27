@@ -326,6 +326,7 @@ const AppContent = () => {
           <Route path="mock-test/:testId/attempt/:attemptId" element={<MockTestAttempt />} />
           <Route path="my-courses" element={<Mycourse />} />
           <Route path="course/:courseId" element={<CourseViewer />} />
+          <Route path="course-content/:courseId" element={<StudentCourseContentManager />} />
 
         </Route>
 
