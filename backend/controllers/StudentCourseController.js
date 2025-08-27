@@ -8,6 +8,16 @@ const User = require("../models/UserSchema");
 // Helper function to check if student has access to course
 const checkCourseAccess = async (userId, courseId) => {
   try {
+    // Special case for admin dev user in development
+    if (process.env.NODE_ENV === 'development' && userId === 'admin-dev-id') {
+      console.log('🔧 Admin dev user detected, granting course access');
+      const course = await Course.findById(courseId);
+      if (!course || !course.published) {
+        return { hasAccess: false, message: "Course not available" };
+      }
+      return { hasAccess: true, course };
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return { hasAccess: false, message: "User not found" };
