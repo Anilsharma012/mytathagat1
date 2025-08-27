@@ -323,10 +323,23 @@ const loadMyCourses = async () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Checking enrollment for course:', course._id);
+        console.log('📚 User enrolled courses:', data.courses);
+
         // Fix: Compare against courseId._id (populated course object) not c._id (enrollment ID)
-        const alreadyEnrolled = course && data.courses && data.courses.some(c =>
-          c.courseId && (c.courseId._id || c.courseId).toString() === course._id.toString()
+        // Also filter out demo enrollments with fake IDs
+        const realEnrollments = (data.courses || []).filter(c =>
+          c._id && !c._id.toString().startsWith('demo_')
         );
+
+        const alreadyEnrolled = course && realEnrollments.some(c => {
+          const enrolledCourseId = (c.courseId && c.courseId._id) || c.courseId;
+          const matches = enrolledCourseId && enrolledCourseId.toString() === course._id.toString();
+          console.log(`📋 Comparing ${enrolledCourseId} with ${course._id}: ${matches}`);
+          return matches;
+        });
+
+        console.log('✅ Final enrollment check result:', alreadyEnrolled);
 
         if (alreadyEnrolled) {
           alert('✅ You are already enrolled in this course!');
