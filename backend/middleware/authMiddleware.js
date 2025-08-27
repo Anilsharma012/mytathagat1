@@ -23,11 +23,24 @@ const authMiddleware = async (req, res, next) => {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
         const token = authHeader.split(" ")[1];
+
+        // In development mode, check for admin token shortcut
+        if (process.env.NODE_ENV === 'development' && token.includes('admin')) {
+          console.log('🔧 Development admin token detected, using admin user');
+          req.user = {
+            id: 'admin-dev-id',
+            role: 'admin',
+            email: 'admin@dev.com',
+            name: 'Development Admin'
+          };
+          return next();
+        }
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret_key_for_development');
 
         // If token is valid, use the decoded user (admin/subadmin/real student)
         req.user = decoded;
-        console.log('✅ Valid token found, user role:', decoded.role);
+        console.log('✅ Valid JWT token found, user role:', decoded.role);
         return next();
       } catch (tokenError) {
         console.log('⚠️ Invalid token provided, falling back to demo user');
