@@ -533,8 +533,26 @@ exports.verifyAndUnlockPayment = async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
     console.log("✅ verifyAndUnlockPayment hit with courseId:", courseId);
 
+    // Validate required fields
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "courseId is required"
+      });
+    }
+
+    // For production mode, validate payment fields
+    if (process.env.NODE_ENV !== 'development') {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment verification fields are required"
+        });
+      }
+    }
+
     // Development bypass - skip signature verification, use actual user from token
-    if (process.env.NODE_ENV === 'development' || razorpay_order_id.startsWith('dev_')) {
+    if (process.env.NODE_ENV === 'development' || (razorpay_order_id && razorpay_order_id.startsWith('dev_'))) {
       console.log('🔧 Development mode - skipping payment verification');
       console.log('🔍 Using user from token:', req.user);
 
