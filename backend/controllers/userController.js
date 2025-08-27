@@ -425,45 +425,121 @@ exports.createOrder = async (req, res) => {
 
  // Adjust path if needed
 
-// exports.verifyAndUnlockPayment = async (req, res) => {
-//  try {
-//       console.log("✅ verifyAndUnlockPayment hit with courseId:", req.body.courseId);
-//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
+exports.verifyAndUnlockPayment = async (req, res) => {
+  try {
+    console.log("✅ verifyAndUnlockPayment hit with body:", req.body);
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
 
-//     const key_secret = process.env.RAZORPAY_KEY_SECRET || "wlVOAREeWhLHJQrlDUr0iEn7";
-//     const generated_signature = crypto
-//       .createHmac("sha256", key_secret)
-//       .update(razorpay_order_id + "|" + razorpay_payment_id)
-//       .digest("hex");
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required payment parameters"
+      });
+    }
 
-//     if (generated_signature !== razorpay_signature) {
-//       return res.status(400).json({ success: false, message: "Invalid signature" });
-//     }
+    // Find the payment record
+    const payment = await Payment.findOne({ razorpay_order_id }).populate('courseId');
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment record not found"
+      });
+    }
 
-//     const user = await User.findById(req.user.id);
-//     if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    // Verify signature
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || "wlVOAREeWhLHJQrlDUr0iEn7";
+    const generated_signature = crypto
+      .createHmac("sha256", key_secret)
+      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .digest("hex");
 
-//     // Check if already enrolled
-//     let courseEntry = user.enrolledCourses.find(c => c.courseId.toString() === courseId);
-//     if (!courseEntry) {
-//       user.enrolledCourses.push({
-//         courseId,
-//         status: "unlocked",
-//         enrolledAt: new Date()
-//       });
-//     } else {
-//       courseEntry.status = "unlocked";
-//     }
+    if (generated_signature !== razorpay_signature) {
+      // Update payment status to failed
+      payment.status = "failed";
+      await payment.save();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment signature"
+      });
+    }
 
-//     await user.save();
+    // Get user and course details
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
-//     return res.status(200).json({ success: true, message: "Payment verified & course unlocked", user });
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found"
+      });
+    }
 
-//   } catch (err) {
-//     console.error("❌ Verify & Unlock error:", err);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
+    // Update payment record
+    payment.razorpay_payment_id = razorpay_payment_id;
+    payment.razorpay_signature = razorpay_signature;
+    payment.status = "paid";
+    await payment.save();
+
+    // Update user enrollment
+    let courseEntry = user.enrolledCourses.find(c => c.courseId.toString() === courseId);
+    if (!courseEntry) {
+      user.enrolledCourses.push({
+        courseId,
+        status: "unlocked",
+        enrolledAt: new Date()
+      });
+    } else {
+      courseEntry.status = "unlocked";
+    }
+    await user.save();
+
+    // Generate receipt
+    const receipt = new Receipt({
+      paymentId: payment._id,
+      userId: user._id,
+      courseId: course._id,
+      receiptNumber: Receipt.generateReceiptNumber(),
+      amount: payment.amount,
+      totalAmount: payment.amount,
+      customerDetails: {
+        name: user.name || user.email,
+        email: user.email,
+        phone: user.phoneNumber,
+        address: user.city || "",
+      },
+      courseDetails: {
+        name: course.name,
+        description: course.description,
+        price: course.price,
+      },
+    });
+
+    await receipt.save();
+    console.log("✅ Receipt generated:", receipt.receiptNumber);
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment verified & course unlocked",
+      user: user,
+      payment: payment,
+      receipt: receipt
+    });
+
+  } catch (err) {
+    console.error("❌ Verify & Unlock error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message
+    });
+  }
+};
 
 
 
