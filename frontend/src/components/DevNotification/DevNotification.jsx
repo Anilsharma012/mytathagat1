@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './DevNotification.css';
 
 const DevNotification = () => {
-  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
 
@@ -40,8 +38,7 @@ const DevNotification = () => {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         alert('✅ Logged in as ' + data.user.name);
-        navigate('/student/dashboard');
-        window.location.reload();
+        window.location.href = '/student/dashboard';
       } else {
         alert('❌ Login failed');
       }
