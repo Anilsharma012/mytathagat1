@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
+import './Dashboard-purchases.css';
 import { fetchPublishedCourses } from '../../utils/api';
 import DiscussionForum from '../../components/DiscussionForum/DiscussionForum';
 import MockTestPage from './MockTests/MockTestPage';
