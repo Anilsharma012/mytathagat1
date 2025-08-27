@@ -20,7 +20,7 @@ console.log('API Configuration:', {
   isLocalhost,
   API_BASE_URL,
   REACT_APP_API_URL: process.env.REACT_APP_API_URL,
-  finalApiUrl: `${API_BASE_URL}/courses/student/published-courses`
+  finalApiUrl: `${API_BASE_URL}/api/courses/student/published-courses`
 });
 
 
