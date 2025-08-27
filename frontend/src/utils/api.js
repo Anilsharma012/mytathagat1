@@ -997,7 +997,7 @@ export const fetchMyCourses = async () => {
 export const startMockTest = async (testId) => {
   try {
     const authToken = localStorage.getItem('authToken');
-    console.log('🚀 Starting mock test with token:', authToken ? 'Present' : 'Missing');
+    console.log('�� Starting mock test with token:', authToken ? 'Present' : 'Missing');
 
     if (!authToken) {
       throw new Error('Authentication required. Please log in to start the test.');
@@ -1076,7 +1076,7 @@ export const safeFetch = async (url, options = {}) => {
     }
 
     return {
-      response,
+      response: response.clone(), // Return a clone to prevent body stream issues
       data,
       parseSuccess,
       ok: response.ok,
