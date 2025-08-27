@@ -81,6 +81,16 @@ const CoursePurchase = () => {
     ]
   };
 
+  // Debug logging
+  console.log('🔍 CoursePurchase rendered with course:', course);
+
+  // Show warning if using fallback data
+  React.useEffect(() => {
+    if (!location.state) {
+      console.warn('⚠️ No course data received from navigation, using fallback course');
+    }
+  }, [location.state]);
+
 const handlePayment = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) {
@@ -517,6 +527,8 @@ The purpose of lorem ipsum is to create a natural looking block of text (sentenc
     }}
     onClick={async () => {
       try {
+        console.log('🔧 Demo login clicked, course data:', course);
+
         // Step 1: Get fresh dev token and store it
         const loginRes = await fetch('/api/dev/login', { method: 'POST' });
         const loginData = await loginRes.json();
@@ -527,12 +539,13 @@ The purpose of lorem ipsum is to create a natural looking block of text (sentenc
 
           // Step 2: Show success and redirect to dashboard
           alert('✅ Demo login successful! Course access granted.');
-          alert('ℹ️ Go to Student Dashboard → My Courses to see unlocked courses');
+          alert(`ℹ️ Course: ${course?.name || 'Default Course'} - Go to Student Dashboard → My Courses to see unlocked courses`);
           window.location.href = '/student/dashboard';
         } else {
           alert('❌ Demo login failed');
         }
       } catch (error) {
+        console.error('Demo login error:', error);
         alert('❌ Error: ' + error.message);
       }
     }}
