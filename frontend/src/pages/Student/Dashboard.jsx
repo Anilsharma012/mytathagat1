@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
 import { fetchPublishedCourses } from '../../utils/api';
 import DiscussionForum from '../../components/DiscussionForum/DiscussionForum';
@@ -59,6 +59,7 @@ ChartJS.register(
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -202,6 +203,21 @@ const loadMyCourses = async () => {
     loadCourses();
     loadMyCourses();
   }, []);
+
+  // Handle payment success redirect
+  useEffect(() => {
+    if (location.state?.showMyCourses) {
+      setActiveSection('courses');
+      if (location.state?.refreshCourses) {
+        // Refresh courses after payment
+        setTimeout(() => {
+          loadMyCourses();
+        }, 1000);
+      }
+      // Clear the state to prevent repeated refreshes
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Handle enrollment with authentication check
   const handleEnrollNow = async (course) => {
