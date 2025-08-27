@@ -651,6 +651,7 @@ app.use("/api/demo", require("./routes/demoRoutes"));
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/test", require("./routes/testAuth"));
 app.use("/api/dev", require("./routes/devRoutes"));
+app.use("/api/dev-payment", require("./routes/devPayment"));
 app.use("/api/test-endpoint", require("./routes/testEndpoint"));
 // app.use("/api/practice-tests", practiceTestRoutes);
 
