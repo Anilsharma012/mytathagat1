@@ -841,7 +841,10 @@ const loadMyCourses = async () => {
                     <span className="progress-text">45% Complete</span>
                   </div>
                   <div className="course-actions">
-                    <button className="continue-btn primary">
+                    <button
+                      className="continue-btn primary"
+                      onClick={() => navigate(`/student/course/${course.courseId._id}`)}
+                    >
                       <FiPlay /> Continue Learning
                     </button>
                     <button className="info-btn">
