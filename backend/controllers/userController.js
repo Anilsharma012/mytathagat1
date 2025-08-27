@@ -556,27 +556,35 @@ exports.verifyAndUnlockPayment = async (req, res) => {
       console.log('🔧 Development mode - skipping payment verification');
       console.log('🔍 Using user from token:', req.user);
 
-      // Find user by ID from token, or create demo user as fallback
+      // Find user by ID from token, or use/create demo user as fallback
       let user = await User.findById(req.user.id);
 
       if (!user) {
-        console.log('⚠️ User not found by token ID, creating demo user');
-        user = new User({
-          _id: req.user.id, // Use the ID from token
-          email: req.user.email || 'demo@test.com',
-          phoneNumber: '9999999999',
-          name: req.user.name || 'Demo Student',
-          isEmailVerified: true,
-          isPhoneVerified: true,
-          city: 'Demo City',
-          gender: 'Male',
-          dob: new Date('1995-01-01'),
-          selectedCategory: 'CAT',
-          selectedExam: 'CAT 2025',
-          enrolledCourses: []
-        });
-        await user.save();
-        console.log('✅ Demo user created with token ID');
+        console.log('⚠️ User not found by token ID, using demo user fallback');
+
+        // Use a consistent demo user to avoid phoneNumber conflicts
+        const demoEmail = 'demo@test.com';
+        user = await User.findOneAndUpdate(
+          { email: demoEmail },
+          {
+            $setOnInsert: {
+              email: demoEmail,
+              phoneNumber: '9999999999',
+              name: 'Demo Student',
+              isEmailVerified: true,
+              isPhoneVerified: true,
+              city: 'Demo City',
+              gender: 'Male',
+              dob: new Date('1995-01-01'),
+              selectedCategory: 'CAT',
+              selectedExam: 'CAT 2025',
+              enrolledCourses: []
+            }
+          },
+          { upsert: true, new: true }
+        );
+
+        console.log('✅ Using demo user:', user._id);
       }
 
       // Add course to enrolled courses
