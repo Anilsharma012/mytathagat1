@@ -533,17 +533,21 @@ exports.verifyAndUnlockPayment = async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
     console.log("✅ verifyAndUnlockPayment hit with courseId:", courseId);
 
-    // Development bypass - skip signature verification
+    // Development bypass - skip signature verification, use actual user from token
     if (process.env.NODE_ENV === 'development' || razorpay_order_id.startsWith('dev_')) {
       console.log('🔧 Development mode - skipping payment verification');
+      console.log('🔍 Using user from token:', req.user);
 
-      // Find or create demo user
-      let demoUser = await User.findOne({ email: 'demo@test.com' });
-      if (!demoUser) {
-        demoUser = new User({
-          email: 'demo@test.com',
+      // Find user by ID from token, or create demo user as fallback
+      let user = await User.findById(req.user.id);
+
+      if (!user) {
+        console.log('⚠️ User not found by token ID, creating demo user');
+        user = new User({
+          _id: req.user.id, // Use the ID from token
+          email: req.user.email || 'demo@test.com',
           phoneNumber: '9999999999',
-          name: 'Demo Student',
+          name: req.user.name || 'Demo Student',
           isEmailVerified: true,
           isPhoneVerified: true,
           city: 'Demo City',
@@ -553,26 +557,29 @@ exports.verifyAndUnlockPayment = async (req, res) => {
           selectedExam: 'CAT 2025',
           enrolledCourses: []
         });
-        await demoUser.save();
+        await user.save();
+        console.log('✅ Demo user created with token ID');
       }
 
       // Add course to enrolled courses
-      const existingCourse = demoUser.enrolledCourses.find(c => c.courseId && c.courseId.toString() === courseId);
+      const existingCourse = user.enrolledCourses.find(c => c.courseId && c.courseId.toString() === courseId);
 
       if (!existingCourse) {
-        demoUser.enrolledCourses.push({
+        user.enrolledCourses.push({
           courseId,
           status: "unlocked",
           enrolledAt: new Date()
         });
-        await demoUser.save();
-        console.log('✅ Demo course unlocked for user');
+        await user.save();
+        console.log('✅ Course unlocked for user:', user._id);
+      } else {
+        console.log('ℹ️ Course already unlocked for user');
       }
 
       return res.status(200).json({
         success: true,
-        message: "Demo course unlocked successfully",
-        enrolledCourses: demoUser.enrolledCourses
+        message: "Course unlocked successfully",
+        enrolledCourses: user.enrolledCourses
       });
     }
 

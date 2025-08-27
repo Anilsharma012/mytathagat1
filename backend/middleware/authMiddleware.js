@@ -18,36 +18,33 @@ const authMiddleware = (req, res, next) => {
     console.log('Authorization header:', req.headers.authorization);
 
     const authHeader = req.headers.authorization || req.header("Authorization");
-    if (authHeader && authHeader.includes('507f1f77bcf86cd799439011')) {
-      console.log('🔧 Development bypass activated for demo user');
-      req.user = {
-        id: '507f1f77bcf86cd799439011',
-        role: 'student',
-        email: 'demo@test.com',
-        name: 'Demo Student'
-      };
-      return next();
+
+    // Development mode - try to decode token, fall back to development user if it fails
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        const decoded = verifyToken(req);
+        console.log('✅ Token verified in dev mode, user:', decoded);
+        req.user = decoded;
+        return next();
+      } catch (tokenError) {
+        console.log('🔧 Token failed in dev mode, using development fallback user');
+        req.user = {
+          id: '507f1f77bcf86cd799439011',
+          role: 'student',
+          email: 'demo@test.com',
+          name: 'Demo Student'
+        };
+        return next();
+      }
     }
 
-    const decoded = verifyToken(req); // { id, role }
-    console.log('✅ Token verified, user:', decoded);
+    // Production mode - strict token verification
+    const decoded = verifyToken(req);
+    console.log('✅ Token verified in production, user:', decoded);
     req.user = decoded;
     next();
   } catch (error) {
     console.log('❌ Auth Middleware Error:', error.message);
-
-    // Development fallback
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Development fallback - allowing demo user');
-      req.user = {
-        id: '507f1f77bcf86cd799439011',
-        role: 'student',
-        email: 'demo@test.com',
-        name: 'Demo Student'
-      };
-      return next();
-    }
-
     return res.status(401).json({ message: "❌ Unauthorized! Invalid Token" });
   }
 };
