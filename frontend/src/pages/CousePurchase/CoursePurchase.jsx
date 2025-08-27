@@ -146,7 +146,8 @@ const handlePayment = async () => {
     } else {
       try {
         const checkData = await checkRes.json();
-        const alreadyUnlocked = checkData.courses && checkData.courses.some(c => c._id === course._id);
+        const courseId = (course && course._id) || null;
+        const alreadyUnlocked = courseId && checkData.courses && checkData.courses.some(c => c._id === courseId);
 
         if (alreadyUnlocked) {
           alert("✅ You have already purchased/unlocked this course.");
@@ -298,7 +299,7 @@ const handlePayment = async () => {
           </div>
 
           {/* Course Title */}
-          <h2 className="course-title">CAT 2025 Full Course IIM ABC Practice Batch</h2>
+          <h2 className="course-title">{course?.name || 'CAT 2025 Full Course IIM ABC Practice Batch'}</h2>
 
           {/* Info Grid Below Title */}
           <div className="info-grid">
