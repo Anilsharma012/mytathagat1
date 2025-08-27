@@ -1,4 +1,6 @@
 const User = require("../models/UserSchema");
+const Payment = require("../models/Payment");
+const Receipt = require("../models/Receipt");
 const jwt = require("jsonwebtoken");
 const Course =require("../models/course/Course")
 const Razorpay = require("razorpay");
@@ -365,69 +367,179 @@ exports.getUnlockedCourses = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, courseId } = req.body;
 
-    if (!amount) {
-      return res.status(400).json({ success: false, message: "Amount is required" });
+    if (!amount || !courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount and courseId are required"
+      });
+    }
+
+    // Verify course exists
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found"
+      });
     }
 
     const options = {
-      amount: amount, // Amount in paise (3000000 = ₹30,000)
+      amount: amount, // Amount in paise
       currency: "INR",
-      receipt: `receipt_${Date.now()}`
+      receipt: `receipt_${Date.now()}_${courseId.substr(-6)}`
     };
 
     const order = await razorpayInstance.orders.create(options);
 
-    res.status(200).json({ success: true, order });
+    // Save payment record in database
+    const payment = new Payment({
+      userId: req.user.id,
+      courseId: courseId,
+      razorpay_order_id: order.id,
+      amount: amount,
+      currency: "INR",
+      status: "created",
+      originalAmount: amount, // Store original amount
+    });
+
+    await payment.save();
+    console.log("✅ Payment record created:", payment._id);
+
+    res.status(200).json({
+      success: true,
+      order: order,
+      paymentId: payment._id
+    });
   } catch (err) {
     console.error("❌ Create order error:", err);
-    res.status(500).json({ success: false, message: "Failed to create order" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to create order",
+      error: err.message
+    });
   }
 };
 
 
  // Adjust path if needed
 
-// exports.verifyAndUnlockPayment = async (req, res) => {
-//  try {
-//       console.log("✅ verifyAndUnlockPayment hit with courseId:", req.body.courseId);
-//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
+exports.verifyAndUnlockPayment = async (req, res) => {
+  try {
+    console.log("✅ verifyAndUnlockPayment hit with body:", req.body);
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
 
-//     const key_secret = process.env.RAZORPAY_KEY_SECRET || "wlVOAREeWhLHJQrlDUr0iEn7";
-//     const generated_signature = crypto
-//       .createHmac("sha256", key_secret)
-//       .update(razorpay_order_id + "|" + razorpay_payment_id)
-//       .digest("hex");
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required payment parameters"
+      });
+    }
 
-//     if (generated_signature !== razorpay_signature) {
-//       return res.status(400).json({ success: false, message: "Invalid signature" });
-//     }
+    // Find the payment record
+    const payment = await Payment.findOne({ razorpay_order_id }).populate('courseId');
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment record not found"
+      });
+    }
 
-//     const user = await User.findById(req.user.id);
-//     if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    // Verify signature
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || "wlVOAREeWhLHJQrlDUr0iEn7";
+    const generated_signature = crypto
+      .createHmac("sha256", key_secret)
+      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .digest("hex");
 
-//     // Check if already enrolled
-//     let courseEntry = user.enrolledCourses.find(c => c.courseId.toString() === courseId);
-//     if (!courseEntry) {
-//       user.enrolledCourses.push({
-//         courseId,
-//         status: "unlocked",
-//         enrolledAt: new Date()
-//       });
-//     } else {
-//       courseEntry.status = "unlocked";
-//     }
+    if (generated_signature !== razorpay_signature) {
+      // Update payment status to failed
+      payment.status = "failed";
+      await payment.save();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment signature"
+      });
+    }
 
-//     await user.save();
+    // Get user and course details
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
-//     return res.status(200).json({ success: true, message: "Payment verified & course unlocked", user });
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found"
+      });
+    }
 
-//   } catch (err) {
-//     console.error("❌ Verify & Unlock error:", err);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
+    // Update payment record
+    payment.razorpay_payment_id = razorpay_payment_id;
+    payment.razorpay_signature = razorpay_signature;
+    payment.status = "paid";
+    await payment.save();
+
+    // Update user enrollment
+    let courseEntry = user.enrolledCourses.find(c => c.courseId.toString() === courseId);
+    if (!courseEntry) {
+      user.enrolledCourses.push({
+        courseId,
+        status: "unlocked",
+        enrolledAt: new Date()
+      });
+    } else {
+      courseEntry.status = "unlocked";
+    }
+    await user.save();
+
+    // Generate receipt
+    const receipt = new Receipt({
+      paymentId: payment._id,
+      userId: user._id,
+      courseId: course._id,
+      receiptNumber: Receipt.generateReceiptNumber(),
+      amount: payment.amount,
+      totalAmount: payment.amount,
+      customerDetails: {
+        name: user.name || user.email,
+        email: user.email,
+        phone: user.phoneNumber,
+        address: user.city || "",
+      },
+      courseDetails: {
+        name: course.name,
+        description: course.description,
+        price: course.price,
+      },
+    });
+
+    await receipt.save();
+    console.log("✅ Receipt generated:", receipt.receiptNumber);
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment verified & course unlocked",
+      user: user,
+      payment: payment,
+      receipt: receipt
+    });
+
+  } catch (err) {
+    console.error("❌ Verify & Unlock error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message
+    });
+  }
+};
 
 
 
@@ -439,6 +551,115 @@ exports.createOrder = async (req, res) => {
 
 
 
+
+// Get user's payment history
+exports.getPaymentHistory = async (req, res) => {
+  try {
+    const payments = await Payment.getUserPayments(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      payments: payments,
+      count: payments.length
+    });
+  } catch (err) {
+    console.error("❌ Get payment history error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment history",
+      error: err.message
+    });
+  }
+};
+
+// Get user's receipts
+exports.getUserReceipts = async (req, res) => {
+  try {
+    const receipts = await Receipt.getUserReceipts(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      receipts: receipts,
+      count: receipts.length
+    });
+  } catch (err) {
+    console.error("❌ Get user receipts error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch receipts",
+      error: err.message
+    });
+  }
+};
+
+// Download specific receipt
+exports.downloadReceipt = async (req, res) => {
+  try {
+    const { receiptId } = req.params;
+    const { format = 'json' } = req.query; // json, html, or text
+
+    const receipt = await Receipt.findById(receiptId)
+      .populate('paymentId')
+      .populate('courseId', 'name description price');
+
+    if (!receipt) {
+      return res.status(404).json({
+        success: false,
+        message: "Receipt not found"
+      });
+    }
+
+    // Verify ownership
+    if (receipt.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied"
+      });
+    }
+
+    // Mark as downloaded
+    await receipt.markAsDownloaded();
+
+    // Get receipt data
+    const receiptData = receipt.getReceiptData();
+
+    if (format === 'html') {
+      const { generateReceiptHTML } = require('../utils/receiptGenerator');
+      const html = generateReceiptHTML(receiptData);
+
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `inline; filename="receipt-${receipt.receiptNumber}.html"`);
+      return res.send(html);
+    }
+
+    if (format === 'text') {
+      const { generateReceiptText } = require('../utils/receiptGenerator');
+      const text = generateReceiptText(receiptData);
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.txt"`);
+      return res.send(text);
+    }
+
+    // Default JSON response
+    res.status(200).json({
+      success: true,
+      receipt: receiptData,
+      downloadCount: receipt.downloadCount,
+      formats: {
+        html: `/api/user/receipt/${receiptId}/download?format=html`,
+        text: `/api/user/receipt/${receiptId}/download?format=text`
+      }
+    });
+  } catch (err) {
+    console.error("❌ Download receipt error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to download receipt",
+      error: err.message
+    });
+  }
+};
 
 exports.verifyToken = async (req, res) => {
   try {
@@ -544,7 +765,7 @@ exports.verifyToken = async (req, res) => {
 
 //     await user.save();
 //     res.status(200).json({ success: true, message: "Payment verified & course unlocked", enrolledCourses: user.enrolledCourses });
-//     console.log(`✅ User saved with unlocked courses:`, user.enrolledCourses);
+//     console.log(`�� User saved with unlocked courses:`, user.enrolledCourses);
 
 //   } catch (err) {
 //     console.error("❌ Verify & Unlock error:", err);

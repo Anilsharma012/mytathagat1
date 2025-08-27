@@ -20,5 +20,12 @@ router.delete("/delete-student/:id", adminAuth, adminController.deleteStudent);
 router.get("/me", adminAuth, adminController.getProfile);
 router.get("/paid-users", adminAuth, adminController.getPaidUsers);
 
+// New payment and course management routes
+router.get("/students-with-purchases", adminAuth, adminController.getStudentsWithPurchases);
+router.get("/payments", adminAuth, adminController.getAllPayments);
+router.get("/course-statistics", adminAuth, adminController.getCourseStatistics);
+router.put("/student/:studentId/course/:courseId/status", adminAuth, adminController.updateStudentCourseStatus);
+router.get("/receipt/:receiptId/download", adminAuth, adminController.downloadStudentReceipt);
+
 
 module.exports = router;

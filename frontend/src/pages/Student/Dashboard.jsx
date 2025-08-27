@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
+import './Dashboard-purchases.css';
 import { fetchPublishedCourses } from '../../utils/api';
 import DiscussionForum from '../../components/DiscussionForum/DiscussionForum';
 import MockTestPage from './MockTests/MockTestPage';
@@ -75,6 +76,12 @@ const StudentDashboard = () => {
   });
   const [myCourses, setMyCourses] = useState([]);
   const [myCoursesLoading, setMyCoursesLoading] = useState(false);
+
+  // Payment History and Receipts state
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [receipts, setReceipts] = useState([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(false);
 
   // Study Materials state
   const [studyMaterials, setStudyMaterials] = useState([]);
@@ -268,6 +275,142 @@ const loadMyCourses = async () => {
       return () => clearInterval(interval);
     }
   }, [activeSection]);
+
+  // Function to load payment history
+  const loadPaymentHistory = async () => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      console.warn('⚠️ No auth token found. Cannot load payment history.');
+      setPaymentHistory([]);
+      return;
+    }
+
+    setPaymentHistoryLoading(true);
+
+    try {
+      const response = await fetch('/api/user/payment/history', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn(`⚠️ Payment history API responded with status ${response.status}`);
+        setPaymentHistory([]);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("📦 Payment History Response:", data);
+
+      if (data.success && Array.isArray(data.payments)) {
+        setPaymentHistory(data.payments);
+      } else {
+        setPaymentHistory([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading payment history:', error);
+      setPaymentHistory([]);
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  };
+
+  // Function to load receipts
+  const loadReceipts = async () => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      console.warn('⚠️ No auth token found. Cannot load receipts.');
+      setReceipts([]);
+      return;
+    }
+
+    setReceiptsLoading(true);
+
+    try {
+      const response = await fetch('/api/user/receipts', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn(`⚠️ Receipts API responded with status ${response.status}`);
+        setReceipts([]);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("📦 Receipts Response:", data);
+
+      if (data.success && Array.isArray(data.receipts)) {
+        setReceipts(data.receipts);
+      } else {
+        setReceipts([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading receipts:', error);
+      setReceipts([]);
+    } finally {
+      setReceiptsLoading(false);
+    }
+  };
+
+  // Function to download receipt
+  const downloadReceipt = async (receiptId, format = 'html') => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      alert('Please login to download receipt');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/user/receipt/${receiptId}/download?format=${format}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download receipt');
+      }
+
+      if (format === 'html') {
+        const html = await response.text();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${receiptId}.html`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else if (format === 'text') {
+        const text = await response.text();
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${receiptId}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('❌ Error downloading receipt:', error);
+      alert('Failed to download receipt. Please try again.');
+    }
+  };
 
   // Handle demo purchase for testing
   const handleDemoPurchase = async (course) => {
@@ -632,8 +775,183 @@ const loadMyCourses = async () => {
     { id: 'materials', label: 'Study Materials', icon: FiDownload },
     { id: 'schedule', label: 'Schedule', icon: FiCalendar },
     { id: 'announcements', label: 'Announcements', icon: FiBell },
+    { id: 'purchases', label: 'Purchase History', icon: FiFileText },
     { id: 'profile', label: 'Profile', icon: FiUser },
   ];
+
+  const renderPurchasesContent = () => {
+    // Load payment history when purchases section is accessed
+    React.useEffect(() => {
+      if (activeSection === 'purchases') {
+        loadPaymentHistory();
+        loadReceipts();
+      }
+    }, [activeSection]);
+
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR'
+      }).format(amount / 100); // Convert paise to rupees
+    };
+
+    const formatDate = (date) => {
+      return new Date(date).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    };
+
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'paid': return '#27ae60';
+        case 'created': return '#f39c12';
+        case 'failed': return '#e74c3c';
+        default: return '#7f8c8d';
+      }
+    };
+
+    return (
+      <div className="purchases-content">
+        <div className="section-header">
+          <h2>Purchase History</h2>
+          <p>View your course purchases and download receipts</p>
+        </div>
+
+        {/* Payment History Section */}
+        <div className="purchases-section">
+          <div className="section-title">
+            <h3>Payment History</h3>
+            {paymentHistoryLoading && <span className="loading-indicator">Loading...</span>}
+          </div>
+
+          {paymentHistory.length === 0 && !paymentHistoryLoading ? (
+            <div className="empty-state">
+              <FiFileText size={48} />
+              <h4>No Purchases Yet</h4>
+              <p>Your course purchases will appear here</p>
+            </div>
+          ) : (
+            <div className="purchases-grid">
+              {paymentHistory.map((payment) => (
+                <div key={payment._id} className="purchase-card">
+                  <div className="purchase-header">
+                    <div className="course-info">
+                      <h4>{payment.courseId?.name || 'Course'}</h4>
+                      <p>{payment.courseId?.description?.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+                    </div>
+                    <div className="purchase-status">
+                      <span
+                        className={`status-badge ${payment.status}`}
+                        style={{ backgroundColor: getStatusColor(payment.status) }}
+                      >
+                        {payment.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="purchase-details">
+                    <div className="detail-row">
+                      <span>Purchase Date:</span>
+                      <span>{formatDate(payment.createdAt)}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Amount Paid:</span>
+                      <span className="amount">{formatCurrency(payment.amount)}</span>
+                    </div>
+                    {payment.validityEndDate && (
+                      <div className="detail-row">
+                        <span>Valid Until:</span>
+                        <span>{formatDate(payment.validityEndDate)}</span>
+                      </div>
+                    )}
+                    {payment.receiptNumber && (
+                      <div className="detail-row">
+                        <span>Receipt No:</span>
+                        <span>{payment.receiptNumber}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {payment.status === 'paid' && (
+                    <div className="purchase-actions">
+                      <button
+                        className="download-btn"
+                        onClick={() => downloadReceipt(payment._id, 'html')}
+                      >
+                        <FiDownload /> Download Receipt
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Receipts Section */}
+        <div className="purchases-section">
+          <div className="section-title">
+            <h3>Receipts</h3>
+            {receiptsLoading && <span className="loading-indicator">Loading...</span>}
+          </div>
+
+          {receipts.length === 0 && !receiptsLoading ? (
+            <div className="empty-state">
+              <FiDownload size={48} />
+              <h4>No Receipts Available</h4>
+              <p>Receipts for successful payments will appear here</p>
+            </div>
+          ) : (
+            <div className="receipts-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Receipt No.</th>
+                    <th>Course</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Downloads</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipts.map((receipt) => (
+                    <tr key={receipt._id}>
+                      <td>{receipt.receiptNumber}</td>
+                      <td>{receipt.courseId?.name || 'Course'}</td>
+                      <td>{formatDate(receipt.generatedAt)}</td>
+                      <td>{formatCurrency(receipt.totalAmount)}</td>
+                      <td>{receipt.downloadCount}</td>
+                      <td>
+                        <div className="receipt-actions">
+                          <button
+                            className="download-btn small"
+                            onClick={() => downloadReceipt(receipt._id, 'html')}
+                            title="Download as HTML"
+                          >
+                            <FiDownload /> HTML
+                          </button>
+                          <button
+                            className="download-btn small"
+                            onClick={() => downloadReceipt(receipt._id, 'text')}
+                            title="Download as Text"
+                          >
+                            <FiFileText /> TXT
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderDashboardContent = () => (
     <div className="dashboard-content">
@@ -845,7 +1163,7 @@ const loadMyCourses = async () => {
                       className="continue-btn primary"
                       onClick={() => {
                         if (course && course._id) {
-                          navigate(`/student/course/${course._id}`);
+                          navigate(`/student/course-content/${course._id}`);
                         } else {
                           console.error('Course ID not found:', course);
                         }
@@ -1233,7 +1551,7 @@ const loadMyCourses = async () => {
 
       <div className="schedule-calendar">
         <div className="calendar-controls">
-          <button className="nav-btn">��</button>
+          <button className="nav-btn">���</button>
           <h3>January 2024</h3>
           <button className="nav-btn">❯</button>
         </div>
@@ -1461,6 +1779,7 @@ const loadMyCourses = async () => {
       case 'materials': return renderMaterialsContent();
       case 'schedule': return renderScheduleContent();
       case 'announcements': return renderAnnouncementsContent();
+      case 'purchases': return renderPurchasesContent();
       case 'profile': return renderProfileContent();
       default: return renderDashboardContent();
     }

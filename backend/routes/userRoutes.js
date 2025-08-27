@@ -25,6 +25,9 @@ router.get("/student/my-courses", authMiddleware,userController.getUnlockedCours
 // router.put("/student/unlock/:courseId", authMiddleware, userController.unlockCourseForStudent);
 router.post("/payment/create-order", authMiddleware, userController.createOrder);
 router.post("/payment/verify-and-unlock", authMiddleware, userController.verifyAndUnlockPayment);
+router.get("/payment/history", authMiddleware, userController.getPaymentHistory);
+router.get("/receipts", authMiddleware, userController.getUserReceipts);
+router.get("/receipt/:receiptId/download", authMiddleware, userController.downloadReceipt);
 
 
 router.get("/test-populate", async (req, res) => {
