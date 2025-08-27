@@ -774,6 +774,7 @@ const loadMyCourses = async () => {
     { id: 'materials', label: 'Study Materials', icon: FiDownload },
     { id: 'schedule', label: 'Schedule', icon: FiCalendar },
     { id: 'announcements', label: 'Announcements', icon: FiBell },
+    { id: 'purchases', label: 'Purchase History', icon: FiFileText },
     { id: 'profile', label: 'Profile', icon: FiUser },
   ];
 
@@ -1375,7 +1376,7 @@ const loadMyCourses = async () => {
 
       <div className="schedule-calendar">
         <div className="calendar-controls">
-          <button className="nav-btn">��</button>
+          <button className="nav-btn">���</button>
           <h3>January 2024</h3>
           <button className="nav-btn">❯</button>
         </div>
