@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './DevNotification.css';
 
 const DevNotification = () => {
+  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
 
@@ -22,6 +24,29 @@ const DevNotification = () => {
       }
     } catch (error) {
       setBackendStatus('disconnected');
+    }
+  };
+
+  const handleStudentLogin = async () => {
+    try {
+      const response = await fetch('/api/dev/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        alert('✅ Logged in as ' + data.user.name);
+        navigate('/student/dashboard');
+        window.location.reload();
+      } else {
+        alert('❌ Login failed');
+      }
+    } catch (error) {
+      alert('❌ Login error: ' + error.message);
     }
   };
 
