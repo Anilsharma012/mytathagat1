@@ -12,19 +12,55 @@ const verifyToken = (req) => {
 };
 
 // ✅ 1. Normal user middleware
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   console.log('🔍 Auth Middleware called for:', req.method, req.path);
   console.log('NODE_ENV:', process.env.NODE_ENV);
 
-  // Always allow in development with fallback user
-  console.log('🔧 Development mode - allowing request with demo user');
-  req.user = {
-    id: '507f1f77bcf86cd799439011',
-    role: 'student',
-    email: 'demo@test.com',
-    name: 'Demo Student'
-  };
-  return next();
+  try {
+    // In development, find the demo user dynamically
+    console.log('🔧 Development mode - finding demo user');
+    const User = require("../models/UserSchema");
+
+    const demoEmail = 'demo@test.com';
+    let demoUser = await User.findOne({ email: demoEmail });
+
+    // If not found, try by hardcoded ID as fallback
+    if (!demoUser) {
+      const demoUserId = '507f1f77bcf86cd799439011';
+      demoUser = await User.findById(demoUserId);
+    }
+
+    if (demoUser) {
+      req.user = {
+        id: demoUser._id.toString(),
+        role: 'student',
+        email: demoUser.email || 'demo@test.com',
+        name: demoUser.name || 'Demo Student'
+      };
+      console.log('✅ Demo user found:', req.user.id);
+    } else {
+      // Fallback to hardcoded user
+      req.user = {
+        id: '507f1f77bcf86cd799439011',
+        role: 'student',
+        email: 'demo@test.com',
+        name: 'Demo Student'
+      };
+      console.log('⚠️ Demo user not found, using fallback ID');
+    }
+
+    return next();
+  } catch (error) {
+    console.error('Error in authMiddleware:', error);
+    // Fallback to hardcoded user on error
+    req.user = {
+      id: '507f1f77bcf86cd799439011',
+      role: 'student',
+      email: 'demo@test.com',
+      name: 'Demo Student'
+    };
+    return next();
+  }
 };
 
 // ✅ 2. Admin + Subadmin access middleware
