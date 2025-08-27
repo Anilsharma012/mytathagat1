@@ -354,40 +354,70 @@ const CourseViewer = () => {
                     <div className="topic-title">{topic.name}</div>
                     
                     {/* Render tests */}
-                    {topic.tests.map((test) => (
-                      <div
-                        key={test.id}
-                        className={`lesson-item ${activeLesson?.id === test.id ? 'active' : ''}`}
-                        onClick={() => handleLessonSelect(test)}
-                      >
-                        <div className="lesson-icon">
-                          <FiCheckCircle />
-                        </div>
-                        <div className="lesson-info">
-                          <div className="lesson-title">{test.name}</div>
-                          <div className="lesson-meta">
-                            <FiClock /> {test.duration} min
+                    {topic.tests.map((test) => {
+                      const progress = getLessonProgress(test.id);
+                      return (
+                        <div
+                          key={test.id}
+                          className={`lesson-item ${activeLesson?.id === test.id ? 'active' : ''} ${progress.status}`}
+                          onClick={() => handleLessonSelect(test)}
+                        >
+                          <div className="lesson-icon">
+                            {progress.status === 'completed' ? (
+                              <FiCheckCircle className="completed" />
+                            ) : progress.status === 'in_progress' ? (
+                              <FiPlay className="in-progress" />
+                            ) : (
+                              <FiClock className="not-started" />
+                            )}
+                          </div>
+                          <div className="lesson-info">
+                            <div className="lesson-title">{test.name}</div>
+                            <div className="lesson-meta">
+                              <FiClock /> {test.duration} min
+                              {progress.progress > 0 && (
+                                <span className="progress-indicator">
+                                  {progress.progress}%
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
                     {/* Render materials */}
-                    {topic.materials && topic.materials.map((material) => (
-                      <div
-                        key={material.id}
-                        className={`lesson-item ${activeLesson?.id === material.id ? 'active' : ''}`}
-                        onClick={() => handleLessonSelect(material)}
-                      >
-                        <div className="lesson-icon">
-                          {material.type === 'video' ? <FiPlay /> : <FiDownload />}
+                    {topic.materials && topic.materials.map((material) => {
+                      const progress = getLessonProgress(material.id);
+                      return (
+                        <div
+                          key={material.id}
+                          className={`lesson-item ${activeLesson?.id === material.id ? 'active' : ''} ${progress.status}`}
+                          onClick={() => handleLessonSelect(material)}
+                        >
+                          <div className="lesson-icon">
+                            {progress.status === 'completed' ? (
+                              <FiCheckCircle className="completed" />
+                            ) : material.type === 'video' ? (
+                              <FiPlay className={progress.status === 'in_progress' ? 'in-progress' : 'not-started'} />
+                            ) : (
+                              <FiDownload className={progress.status === 'in_progress' ? 'in-progress' : 'not-started'} />
+                            )}
+                          </div>
+                          <div className="lesson-info">
+                            <div className="lesson-title">{material.name}</div>
+                            <div className="lesson-meta">
+                              {material.type.toUpperCase()}
+                              {progress.progress > 0 && (
+                                <span className="progress-indicator">
+                                  {progress.progress}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="lesson-info">
-                          <div className="lesson-title">{material.name}</div>
-                          <div className="lesson-meta">{material.type.toUpperCase()}</div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -512,9 +542,14 @@ const CourseViewer = () => {
           <h1>{course?.name || 'Course Content'}</h1>
           <div className="course-progress">
             <div className="progress-bar">
-              <div className="progress-fill" style={{ width: '45%' }}></div>
+              <div
+                className="progress-fill"
+                style={{ width: `${userProgress.overallProgress || 0}%` }}
+              ></div>
             </div>
-            <span className="progress-text">45% Complete</span>
+            <span className="progress-text">
+              {userProgress.overallProgress || 0}% Complete
+            </span>
           </div>
         </div>
       </div>
