@@ -199,14 +199,42 @@ const CourseViewer = () => {
   };
 
   const loadUserProgress = async () => {
-    // TODO: Implement user progress tracking
-    // For now, set empty progress
-    setUserProgress({});
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`/api/progress/course/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setUserProgress(response.data.progress);
+      }
+    } catch (err) {
+      console.error('Error loading user progress:', err);
+      setUserProgress({});
+    }
   };
 
   const setInitialLesson = async () => {
-    // TODO: Implement resume functionality
-    // For now, set first available lesson
+    try {
+      // Try to get resume lesson from API
+      const token = localStorage.getItem('authToken');
+      const resumeResponse = await axios.get(`/api/progress/course/${courseId}/resume`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (resumeResponse.data.success && resumeResponse.data.resumeLesson) {
+        const resumeLesson = resumeResponse.data.resumeLesson;
+        const lesson = findLessonById(resumeLesson.lessonId, resumeLesson.lessonType);
+        if (lesson) {
+          setActiveLesson(lesson);
+          return;
+        }
+      }
+    } catch (err) {
+      console.log('No resume lesson found, starting with first available lesson');
+    }
+
+    // Fallback to first available lesson
     if (courseContent.length > 0) {
       const firstLesson = findFirstAvailableLesson(courseContent);
       if (firstLesson) {
@@ -234,8 +262,71 @@ const CourseViewer = () => {
     return null;
   };
 
-  const handleLessonSelect = (lesson) => {
+  const findLessonById = (lessonId, lessonType) => {
+    for (const subject of courseContent) {
+      for (const chapter of subject.chapters) {
+        for (const topic of chapter.topics) {
+          // Check tests
+          const test = topic.tests.find(t => t.id === lessonId && t.type === lessonType);
+          if (test) return test;
+
+          // Check materials
+          if (topic.materials) {
+            const material = topic.materials.find(m => m.id === lessonId && m.type === lessonType);
+            if (material) return material;
+          }
+        }
+      }
+
+      // Check subject-level materials
+      if (subject.materials) {
+        const material = subject.materials.find(m => m.id === lessonId && m.type === lessonType);
+        if (material) return material;
+      }
+    }
+    return null;
+  };
+
+  const handleLessonSelect = async (lesson) => {
     setActiveLesson(lesson);
+
+    // Track lesson start
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.post(`/api/progress/course/${courseId}/start-lesson`, {
+        lessonId: lesson.id,
+        lessonType: lesson.type
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.error('Error tracking lesson start:', err);
+    }
+  };
+
+  const updateLessonProgress = async (lessonId, lessonType, progressData) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.post(`/api/progress/course/${courseId}/lesson`, {
+        lessonId,
+        lessonType,
+        ...progressData
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Reload user progress to update UI
+      await loadUserProgress();
+    } catch (err) {
+      console.error('Error updating lesson progress:', err);
+    }
+  };
+
+  const getLessonProgress = (lessonId) => {
+    if (!userProgress.lessonProgress) return { status: 'not_started', progress: 0 };
+
+    const lesson = userProgress.lessonProgress.find(l => l.lessonId === lessonId);
+    return lesson || { status: 'not_started', progress: 0 };
   };
 
   const renderSidebar = () => (
