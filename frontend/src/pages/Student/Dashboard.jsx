@@ -843,7 +843,13 @@ const loadMyCourses = async () => {
                   <div className="course-actions">
                     <button
                       className="continue-btn primary"
-                      onClick={() => navigate(`/student/course/${course.courseId._id}`)}
+                      onClick={() => {
+                        if (course && course._id) {
+                          navigate(`/student/course/${course._id}`);
+                        } else {
+                          console.error('Course ID not found:', course);
+                        }
+                      }}
                     >
                       <FiPlay /> Continue Learning
                     </button>
