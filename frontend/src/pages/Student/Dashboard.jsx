@@ -219,6 +219,48 @@ const loadMyCourses = async () => {
     }
   }, [location.state]);
 
+  // Handle demo purchase for testing
+  const handleDemoPurchase = async (course) => {
+    const authToken = localStorage.getItem('authToken');
+
+    if (!authToken) {
+      alert('Please login first!');
+      return;
+    }
+
+    try {
+      // Simulate payment verification directly
+      const response = await fetch('/api/user/payment/verify-and-unlock', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          razorpay_order_id: 'demo_order_' + Date.now(),
+          razorpay_payment_id: 'demo_payment_' + Date.now(),
+          razorpay_signature: 'demo_signature',
+          courseId: course._id
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ Demo course purchased successfully!');
+        // Refresh my courses
+        setTimeout(() => {
+          loadMyCourses();
+          setActiveSection('courses'); // Switch to My Courses
+        }, 1000);
+      } else {
+        alert('❌ Demo purchase failed: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Demo purchase error:', error);
+      alert('❌ Demo purchase error: ' + error.message);
+    }
+  };
+
   // Handle enrollment with authentication check
   const handleEnrollNow = async (course) => {
     const authToken = localStorage.getItem('authToken');
