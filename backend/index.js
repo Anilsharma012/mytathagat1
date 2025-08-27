@@ -105,26 +105,28 @@ app.post("/api/dev/login", async (req, res) => {
 
         console.log('🔍 Development login request received');
 
-        // Find or create a real demo user
-        let demoUser = await User.findOne({ email: 'demo@test.com' });
-
-        if (!demoUser) {
-            demoUser = new User({
-                email: 'demo@test.com',
-                phoneNumber: '9999999999',
-                name: 'Demo Student',
-                isEmailVerified: true,
-                isPhoneVerified: true,
-                city: 'Demo City',
-                gender: 'Male',
-                dob: new Date('1995-01-01'),
-                selectedCategory: 'CAT',
-                selectedExam: 'CAT 2025',
-                enrolledCourses: []
-            });
-            await demoUser.save();
-            console.log('✅ Demo user created in database with ID:', demoUser._id);
-        }
+        // Find or create a real demo user with atomic upsert
+        const demoEmail = 'demo@test.com';
+        let demoUser = await User.findOneAndUpdate(
+            { email: demoEmail },
+            {
+                $setOnInsert: {
+                    email: demoEmail,
+                    phoneNumber: '9999999999',
+                    name: 'Demo Student',
+                    isEmailVerified: true,
+                    isPhoneVerified: true,
+                    city: 'Demo City',
+                    gender: 'Male',
+                    dob: new Date('1995-01-01'),
+                    selectedCategory: 'CAT',
+                    selectedExam: 'CAT 2025',
+                    enrolledCourses: []
+                }
+            },
+            { upsert: true, new: true }
+        );
+        console.log('✅ Demo user ready in database with ID:', demoUser._id);
 
         const jwtSecret = process.env.JWT_SECRET || 'test_secret_key_for_development';
         const token = jwt.sign(
