@@ -25,9 +25,13 @@ const ZoomManagement = () => {
 
     const fetchCourses = async () => {
         try {
-            const response = await axios.get('/api/courses');
-            setCourses(response.data);
+            const token = localStorage.getItem("adminToken");
+            const response = await axios.get('/api/courses', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setCourses(response.data.courses || response.data || []);
         } catch (error) {
+            console.error('Error fetching courses:', error);
             toast.error('Error fetching courses');
         }
     };
