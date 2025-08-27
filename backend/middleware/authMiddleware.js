@@ -8,7 +8,7 @@ const verifyToken = (req) => {
   }
 
   const token = authHeader.split(" ")[1];
-  return jwt.verify(token, process.env.JWT_SECRET || 'test_secret_key_for_development');
+  return jwt.verify(token, process.env.JWT_SECRET || 'secret_admin_key');
 };
 
 // ✅ 1. Normal user middleware
