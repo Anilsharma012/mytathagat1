@@ -305,6 +305,23 @@ exports.getUnlockedCourses = async (req, res) => {
       return res.status(200).json({ success: true, courses: unlockedCourses });
     }
 
+    // Special case for admin dev user in development
+    if (process.env.NODE_ENV === 'development' && userId === 'admin-dev-id') {
+      console.log('🔧 Admin dev user detected, granting access to all published courses');
+      const Course = require('../models/course/Course');
+      const publishedCourses = await Course.find({ published: true });
+
+      const adminCourses = publishedCourses.map(course => ({
+        _id: 'admin-enrollment-' + course._id,
+        status: 'unlocked',
+        enrolledAt: new Date(),
+        courseId: course
+      }));
+
+      console.log('📊 Returning admin courses count:', adminCourses.length);
+      return res.status(200).json({ success: true, courses: adminCourses });
+    }
+
     // Validate userId format - return empty array for invalid IDs instead of 400 error
     const mongoose = require('mongoose');
     if (!mongoose.Types.ObjectId.isValid(userId)) {
