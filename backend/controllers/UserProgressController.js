@@ -66,6 +66,15 @@ exports.updateLessonProgress = async (req, res) => {
       });
     }
 
+    // Special case for admin dev user in development
+    if (process.env.NODE_ENV === 'development' && userId === 'admin-dev-id') {
+      console.log('🔧 Admin dev user detected, skipping lesson progress update');
+      return res.status(200).json({
+        success: true,
+        message: "Lesson progress updated (admin dev mode)",
+      });
+    }
+
     let userProgress = await UserProgress.findOne({ userId, courseId });
 
     if (!userProgress) {
