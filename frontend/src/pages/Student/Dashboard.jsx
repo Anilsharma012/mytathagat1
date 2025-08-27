@@ -247,7 +247,8 @@ const loadMyCourses = async () => {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       const interval = setInterval(() => {
-        if (activeSection === 'courses') {
+        if (activeSection === 'my-courses') {
+          console.log('🔄 Dev mode: Refreshing My Courses...');
           loadMyCourses();
         }
       }, 5000); // Refresh every 5 seconds in dev mode
