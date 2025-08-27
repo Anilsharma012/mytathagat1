@@ -926,8 +926,8 @@ export const checkBackendHealth = async () => {
 // API endpoints
 export const API_ENDPOINTS = {
   AUTO_LOGIN: `${API_BASE_URL}/v1/auto-login`,
-  PUBLISHED_COURSES: `${API_BASE_URL}/courses/student/published-courses`,
-  MY_COURSES: `${API_BASE_URL}/user/student/my-courses`,
+  PUBLISHED_COURSES: `${API_BASE_URL}/api/courses/student/published-courses`,
+  MY_COURSES: `${API_BASE_URL}/api/user/student/my-courses`,
   IIM_PREDICTOR: (userId) => `${API_BASE_URL}/v2/iim-predictor/${userId}`,
 };
 
