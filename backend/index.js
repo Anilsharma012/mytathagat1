@@ -48,7 +48,8 @@ app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 // ======================= CORS ==========================================
 const allowedOrigins = [
   "http://localhost:3000",
-  "http://localhost:3001" ,
+  "http://localhost:3001",
+  "http://localhost:3002",              // Added for current dev setup
    "http://127.0.0.1:3000",              // Local dev
   "https://tathagat.satyaka.in",            // Production domain
   "https://602013ebf633402e8096c9cab19561d7-38235a13d63b4a5991fa93f6f.fly.dev",  // Previous deployment
