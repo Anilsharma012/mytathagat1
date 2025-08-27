@@ -157,7 +157,10 @@ const handlePayment = async () => {
       try {
         const checkData = await checkRes.json();
         const courseId = (course && course._id) || null;
-        const alreadyUnlocked = courseId && checkData.courses && checkData.courses.some(c => c._id === courseId);
+        // Fix: Compare against courseId._id (populated course object) not c._id (enrollment ID)
+        const alreadyUnlocked = courseId && checkData.courses && checkData.courses.some(c =>
+          c.courseId && (c.courseId._id || c.courseId).toString() === courseId.toString()
+        );
 
         if (alreadyUnlocked) {
           alert("✅ You have already purchased/unlocked this course.");
