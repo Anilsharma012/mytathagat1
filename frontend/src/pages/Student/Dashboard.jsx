@@ -163,13 +163,17 @@ const loadMyCourses = async () => {
   }
 
   setMyCoursesLoading(true);
+  console.log('🔄 loadMyCourses: Starting to fetch courses...');
 
   try {
     // Try dev payment endpoint first
+    console.log('🔧 Trying dev endpoint: /api/dev-payment/my-courses');
     let response = await fetch('/api/dev-payment/my-courses');
+    console.log('📊 Dev endpoint response status:', response.status);
 
     // If that fails, try regular endpoint
     if (!response.ok) {
+      console.log('🔄 Dev endpoint failed, trying regular endpoint: /api/user/student/my-courses');
       response = await fetch('/api/user/student/my-courses', {
         method: 'GET',
         headers: {
@@ -177,11 +181,11 @@ const loadMyCourses = async () => {
           'Content-Type': 'application/json'
         }
       });
+      console.log('📊 Regular endpoint response status:', response.status);
     }
 
     if (!response.ok) {
-      console.warn(`⚠️ API responded with status ${response.status}, showing demo courses`);
-      // Only show demo courses if explicitly in demo mode, not as fallback
+      console.warn(`⚠️ API responded with status ${response.status}`);
       console.warn('⚠️ API call failed - not showing demo courses to avoid conflicts');
       setMyCourses([]);
       return;
@@ -189,20 +193,28 @@ const loadMyCourses = async () => {
 
     const data = await response.json();
     console.log("📦 My Courses Response:", data);
+    console.log("🔍 Response structure analysis:");
+    console.log("   - data.courses:", data.courses);
+    console.log("   - Array.isArray(data.courses):", Array.isArray(data.courses));
+    console.log("   - data.courses length:", data.courses ? data.courses.length : 'N/A');
 
     // Handle different response formats
     let coursesArray = [];
     if (Array.isArray(data.courses)) {
       coursesArray = data.courses;
+      console.log('✅ Using data.courses array');
     } else if (Array.isArray(data)) {
       coursesArray = data;
+      console.log('✅ Using data as array');
     } else if (data.data && Array.isArray(data.data)) {
       coursesArray = data.data;
+      console.log('✅ Using data.data array');
     } else {
       console.warn('⚠️ No courses array found in response:', data);
     }
 
-    console.log('📚 Setting courses:', coursesArray.length, 'courses found');
+    console.log('📚 Final courses array:', coursesArray);
+    console.log('📊 Setting courses count:', coursesArray.length);
     setMyCourses(coursesArray);
 
   } catch (error) {
