@@ -135,27 +135,25 @@ const handlePayment = async () => {
       }
     }
 
-    // ✅ 2️⃣ Fetch actual course details
-    const courseRes = await fetch(`/api/courses/${course._id}`);
+    // ✅ 2️⃣ Fetch actual course details and set amount
+    let amountInPaise = (course.price || 1500) * 100; // Default amount
+    let courseName = course.name || "Course Purchase"; // Default course name
 
-    if (!courseRes.ok) {
-      console.warn(`Course fetch failed with status: ${courseRes.status}, using passed course data`);
-      // Use the course data passed to the function
-      const amountInPaise = (course.price || 1500) * 100; // Default to ₹1500 if no price
-    } else {
-      try {
+    try {
+      const courseRes = await fetch(`/api/courses/${course._id}`);
+
+      if (courseRes.ok) {
         const courseData = await courseRes.json();
 
-        if (!courseData.course) {
-          alert("❌ Course not found");
-          return;
+        if (courseData.course) {
+          amountInPaise = courseData.course.price * 100;
+          courseName = courseData.course.name || courseName;
         }
-
-        var amountInPaise = courseData.course.price * 100;
-      } catch (jsonError) {
-        console.warn('Failed to parse course response, using default price');
-        var amountInPaise = (course.price || 1500) * 100;
+      } else {
+        console.warn(`Course fetch failed with status: ${courseRes.status}, using passed course data`);
       }
+    } catch (error) {
+      console.warn('Failed to fetch course details, using default values:', error);
     }
 
     // ✅ 3️⃣ Create Razorpay order
@@ -191,7 +189,7 @@ const handlePayment = async () => {
       amount: orderData.order.amount,
       currency: "INR",
       name: "Tathagat Academy",
-      description: courseData.course.name || "Course Purchase",
+      description: courseName,
       order_id: orderData.order.id,
       handler: function (response) {
         // ✅ 4️⃣ Verify and unlock
