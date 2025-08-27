@@ -1604,6 +1604,7 @@ const loadMyCourses = async () => {
       case 'materials': return renderMaterialsContent();
       case 'schedule': return renderScheduleContent();
       case 'announcements': return renderAnnouncementsContent();
+      case 'purchases': return renderPurchasesContent();
       case 'profile': return renderProfileContent();
       default: return renderDashboardContent();
     }
