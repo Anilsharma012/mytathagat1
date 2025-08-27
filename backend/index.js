@@ -98,36 +98,53 @@ app.get("/api/test", (req, res) => {
 });
 
 // ======================= Development Test User ========================================
-app.post("/api/dev/login", (req, res) => {
+app.post("/api/dev/login", async (req, res) => {
     try {
         const jwt = require('jsonwebtoken');
-        const mongoose = require('mongoose');
+        const User = require('./models/UserSchema');
 
         console.log('🔍 Development login request received');
 
-        // Create a fixed ObjectId for development user
-        const devUserId = '507f1f77bcf86cd799439011'; // Fixed valid ObjectId for development
+        // Find or create a real demo user
+        let demoUser = await User.findOne({ email: 'demo@test.com' });
 
-        // Create a development user token
-        const devUser = {
-            id: devUserId,
-            email: 'dev@test.com',
-            name: 'Development User',
-            role: 'student'
-        };
+        if (!demoUser) {
+            demoUser = new User({
+                email: 'demo@test.com',
+                phoneNumber: '9999999999',
+                name: 'Demo Student',
+                isEmailVerified: true,
+                isPhoneVerified: true,
+                city: 'Demo City',
+                gender: 'Male',
+                dob: new Date('1995-01-01'),
+                selectedCategory: 'CAT',
+                selectedExam: 'CAT 2025',
+                enrolledCourses: []
+            });
+            await demoUser.save();
+            console.log('✅ Demo user created in database with ID:', demoUser._id);
+        }
 
         const jwtSecret = process.env.JWT_SECRET || 'test_secret_key_for_development';
-        console.log('JWT Secret exists:', !!jwtSecret);
+        const token = jwt.sign(
+            { id: demoUser._id, role: 'student' },
+            jwtSecret,
+            { expiresIn: '24h' }
+        );
 
-        const token = jwt.sign(devUser, jwtSecret, { expiresIn: '24h' });
-
-        console.log('✅ Development token created for user:', devUserId);
+        console.log('✅ Development token created for real user:', demoUser._id);
 
         res.status(200).json({
             success: true,
             message: "Development user logged in",
             token: token,
-            user: devUser
+            user: {
+                id: demoUser._id,
+                email: demoUser.email,
+                name: demoUser.name,
+                role: 'student'
+            }
         });
     } catch (error) {
         console.error('❌ Dev login error:', error);
