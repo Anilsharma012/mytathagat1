@@ -1049,18 +1049,30 @@ export const safeFetch = async (url, options = {}) => {
   try {
     const response = await fetch(url, options);
 
+    // Clone response to avoid body stream already read errors
+    const responseClone = response.clone();
     let data;
     let parseSuccess = false;
 
     try {
-      data = await response.json();
+      data = await responseClone.json();
       parseSuccess = true;
     } catch (parseError) {
       console.warn('Failed to parse response as JSON:', parseError);
-      data = {
-        success: false,
-        message: `Server returned ${response.status}: ${response.statusText}`
-      };
+      // Try to get text from the original response as fallback
+      try {
+        const text = await response.text();
+        data = {
+          success: false,
+          message: `Server returned ${response.status}: ${response.statusText}`,
+          rawResponse: text.substring(0, 500) // Include first 500 chars for debugging
+        };
+      } catch (textError) {
+        data = {
+          success: false,
+          message: `Server returned ${response.status}: ${response.statusText}`
+        };
+      }
     }
 
     return {
