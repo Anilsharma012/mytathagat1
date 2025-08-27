@@ -7,6 +7,24 @@ exports.getUserProgress = async (req, res) => {
     const { courseId } = req.params;
     const userId = req.user.id;
 
+    // Special case for admin dev user in development
+    if (process.env.NODE_ENV === 'development' && userId === 'admin-dev-id') {
+      console.log('🔧 Admin dev user detected, returning empty progress');
+      const mockProgress = {
+        _id: 'admin-progress-' + courseId,
+        userId: 'admin-dev-id',
+        courseId,
+        lessonProgress: [],
+        overallProgress: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      return res.status(200).json({
+        success: true,
+        progress: mockProgress,
+      });
+    }
+
     let progress = await UserProgress.findOne({ userId, courseId });
 
     if (!progress) {
@@ -96,6 +114,15 @@ exports.getResumeLesson = async (req, res) => {
     const { courseId } = req.params;
     const userId = req.user.id;
 
+    // Special case for admin dev user in development
+    if (process.env.NODE_ENV === 'development' && userId === 'admin-dev-id') {
+      console.log('🔧 Admin dev user detected, returning no resume lesson');
+      return res.status(200).json({
+        success: true,
+        resumeLesson: null,
+      });
+    }
+
     const progress = await UserProgress.findOne({ userId, courseId });
 
     let resumeLesson = null;
@@ -127,6 +154,15 @@ exports.startLesson = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "lessonId and lessonType are required",
+      });
+    }
+
+    // Special case for admin dev user in development
+    if (process.env.NODE_ENV === 'development' && userId === 'admin-dev-id') {
+      console.log('🔧 Admin dev user detected, skipping lesson start tracking');
+      return res.status(200).json({
+        success: true,
+        message: "Lesson started (admin dev mode)",
       });
     }
 
