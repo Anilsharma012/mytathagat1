@@ -259,6 +259,17 @@ exports.getStudentCourseStructure = async (req, res) => {
         }))
     }));
 
+    console.log('🎯 Final organized course structure:');
+    courseStructure.forEach((subject, i) => {
+      console.log(`🎯 Subject ${i}: ${subject.name} (Chapters: ${subject.chapters.length})`);
+      subject.chapters.forEach((chapter, j) => {
+        console.log(`   Chapter ${j}: ${chapter.name} (Topics: ${chapter.topics.length})`);
+        chapter.topics.forEach((topic, k) => {
+          console.log(`     Topic ${k}: ${topic.name} (Tests: ${topic.tests.length})`);
+        });
+      });
+    });
+
     res.status(200).json({
       success: true,
       course: accessCheck.course,
