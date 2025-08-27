@@ -181,27 +181,9 @@ const loadMyCourses = async () => {
 
     if (!response.ok) {
       console.warn(`⚠️ API responded with status ${response.status}, showing demo courses`);
-      // Show demo courses if user is logged in
-      const demoUser = JSON.parse(localStorage.getItem('user') || '{}');
-      if (demoUser.name) {
-        setMyCourses([
-          {
-            _id: 'demo_enrollment_1',
-            status: 'unlocked',
-            enrolledAt: new Date(),
-            courseId: {
-              _id: '6835a4fcf528e08ff15a566e',
-              name: 'CAT 2025 Full Course',
-              description: 'Complete CAT preparation course',
-              price: 1500,
-              thumbnail: '1748346152822-resourcesOne.png'
-            }
-          }
-        ]);
-        console.log('✅ Showing demo courses for logged in user');
-      } else {
-        setMyCourses([]);
-      }
+      // Only show demo courses if explicitly in demo mode, not as fallback
+      console.warn('⚠️ API call failed - not showing demo courses to avoid conflicts');
+      setMyCourses([]);
       return;
     }
 
