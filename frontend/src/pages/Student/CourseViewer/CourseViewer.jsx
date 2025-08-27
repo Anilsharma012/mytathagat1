@@ -168,6 +168,20 @@ const CourseViewer = () => {
         console.log('No study materials found for this course');
       }
 
+      console.log('🎯 Final transformed course structure:', courseStructure);
+      console.log('🎯 Total subjects:', courseStructure.length);
+      courseStructure.forEach((subject, i) => {
+        console.log(`🎯 Final Subject ${i}:`, subject.name);
+        console.log(`   Chapters: ${subject.chapters?.length}`);
+        console.log(`   Materials: ${subject.materials?.length}`);
+        subject.chapters?.forEach((chapter, j) => {
+          console.log(`   Chapter ${j}: ${chapter.name} (Topics: ${chapter.topics?.length})`);
+          chapter.topics?.forEach((topic, k) => {
+            console.log(`     Topic ${k}: ${topic.name} (Tests: ${topic.tests?.length})`);
+          });
+        });
+      });
+
       setCourseContent(courseStructure);
       setSubjects(structure); // Set the original structure for reference
 
