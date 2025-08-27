@@ -212,12 +212,26 @@ const loadMyCourses = async () => {
         // Refresh courses after payment
         setTimeout(() => {
           loadMyCourses();
+          loadCourses(); // Also refresh available courses
         }, 1000);
       }
       // Clear the state to prevent repeated refreshes
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  // Add periodic refresh for development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const interval = setInterval(() => {
+        if (activeSection === 'courses') {
+          loadMyCourses();
+        }
+      }, 5000); // Refresh every 5 seconds in dev mode
+
+      return () => clearInterval(interval);
+    }
+  }, [activeSection]);
 
   // Handle demo purchase for testing
   const handleDemoPurchase = async (course) => {
