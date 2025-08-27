@@ -265,8 +265,12 @@ const loadMyCourses = async () => {
   useEffect(() => {
     if (location.state?.showMyCourses) {
       setActiveSection('my-courses'); // Navigate to My Courses section
+
+      // Immediate refresh to show purchased course
+      loadMyCourses();
+
       if (location.state?.refreshCourses) {
-        // Refresh courses after payment
+        // Additional refresh after a delay to ensure data is updated
         setTimeout(() => {
           loadMyCourses();
           loadCourses(); // Also refresh available courses
