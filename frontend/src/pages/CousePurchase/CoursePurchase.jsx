@@ -143,7 +143,13 @@ const handlePayment = async () => {
           console.log("✅ Verify API response:", data);
           if (data.success) {
             alert("✅ Payment verified & course unlocked!");
-            navigate("/student/dashboard");
+            // Navigate to dashboard and switch to My Courses section
+            navigate("/student/dashboard", {
+              state: {
+                showMyCourses: true,
+                refreshCourses: true
+              }
+            });
           } else {
             alert("❌ Payment verification failed: " + data.message);
           }
