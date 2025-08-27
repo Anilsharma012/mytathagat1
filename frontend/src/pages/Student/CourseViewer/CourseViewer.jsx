@@ -99,6 +99,18 @@ const CourseViewer = () => {
 
       const { structure, course } = structureRes.data;
 
+      console.log('📚 Raw course structure from backend:', structure);
+      console.log('📊 Structure length:', structure?.length);
+      structure?.forEach((subject, i) => {
+        console.log(`📖 Subject ${i}:`, subject.name, 'Chapters:', subject.chapters?.length);
+        subject.chapters?.forEach((chapter, j) => {
+          console.log(`  📘 Chapter ${j}:`, chapter.name, 'Topics:', chapter.topics?.length);
+          chapter.topics?.forEach((topic, k) => {
+            console.log(`    📝 Topic ${k}:`, topic.name, 'Tests:', topic.tests?.length);
+          });
+        });
+      });
+
       // Transform the structure to match the expected format
       const courseStructure = structure.map(subject => ({
         id: subject._id,
