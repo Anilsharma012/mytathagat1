@@ -349,7 +349,10 @@ const loadMyCourses = async () => {
 
       if (response.ok) {
         const data = await response.json();
-        const alreadyEnrolled = data.courses?.some(c => c._id === course._id);
+        // Fix: Compare against courseId._id (populated course object) not c._id (enrollment ID)
+        const alreadyEnrolled = course && data.courses && data.courses.some(c =>
+          c.courseId && (c.courseId._id || c.courseId).toString() === course._id.toString()
+        );
 
         if (alreadyEnrolled) {
           alert('✅ You are already enrolled in this course!');
