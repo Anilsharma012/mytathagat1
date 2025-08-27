@@ -323,8 +323,12 @@ export const fetchWithErrorHandling = async (url, options = {}) => {
     // Try to parse JSON first, then handle errors
     let responseData;
     let parseSuccess = false;
+
     try {
-      const text = await response.text();
+      // Clone the response to allow multiple reads if needed
+      const responseClone = response.clone();
+      const text = await responseClone.text();
+
       if (!text || text.trim() === '') {
         throw new Error('Empty response body');
       }
@@ -353,7 +357,7 @@ export const fetchWithErrorHandling = async (url, options = {}) => {
     }
 
     if (!response.ok) {
-      // Now we can safely access the response data without re-reading the stream
+      // Use the already parsed data or create error message
       const errorMessage = responseData.message || `HTTP ${response.status}: ${response.statusText}`;
       throw new Error(errorMessage);
     }
