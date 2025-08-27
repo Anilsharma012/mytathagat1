@@ -208,12 +208,20 @@ const loadMyCourses = async () => {
     const data = await response.json();
     console.log("📦 My Courses Response:", data);
 
+    // Handle different response formats
+    let coursesArray = [];
     if (Array.isArray(data.courses)) {
-      setMyCourses(data.courses);
+      coursesArray = data.courses;
+    } else if (Array.isArray(data)) {
+      coursesArray = data;
+    } else if (data.data && Array.isArray(data.data)) {
+      coursesArray = data.data;
     } else {
-      console.warn('⚠️ No "courses" array found in response:', data);
-      setMyCourses([]);
+      console.warn('⚠️ No courses array found in response:', data);
     }
+
+    console.log('📚 Setting courses:', coursesArray.length, 'courses found');
+    setMyCourses(coursesArray);
 
   } catch (error) {
     console.error('❌ Error fetching my courses:', error);
