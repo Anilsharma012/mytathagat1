@@ -79,6 +79,7 @@ import MockTestPage from "./pages/Student/MockTests/MockTestPage";
 import MockTestInstructions from "./pages/Student/MockTests/MockTestInstructions";
 import MockTestTerms from "./pages/Student/MockTests/MockTestTerms";
 import MockTestAttempt from "./pages/Student/MockTests/MockTestAttempt";
+import CourseViewer from "./pages/Student/CourseViewer/CourseViewer";
 import SuccessStory from "./pages/SuccessStory/SuccessStory";
 import Faq from "./pages/Faq/Faq";
 import ScoreCard from "./pages/ScoreCard/ScoreCard";
@@ -323,8 +324,8 @@ const AppContent = () => {
           <Route path="mock-test/:testId/terms" element={<MockTestTerms />} />
           <Route path="mock-test/:testId/attempt/:attemptId" element={<MockTestAttempt />} />
           <Route path="my-courses" element={<Mycourse />} />
- 
-          
+          <Route path="course/:courseId" element={<CourseViewer />} />
+
         </Route>
 
         {/* Redirect all unknown routes to admin login */}
