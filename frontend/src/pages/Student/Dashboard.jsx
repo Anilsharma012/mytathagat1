@@ -256,7 +256,7 @@ const loadMyCourses = async () => {
   // Handle payment success redirect
   useEffect(() => {
     if (location.state?.showMyCourses) {
-      setActiveSection('courses');
+      setActiveSection('my-courses'); // Navigate to My Courses section
       if (location.state?.refreshCourses) {
         // Refresh courses after payment
         setTimeout(() => {
