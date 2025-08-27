@@ -17,8 +17,25 @@ const authMiddleware = async (req, res, next) => {
   console.log('NODE_ENV:', process.env.NODE_ENV);
 
   try {
-    // In development, find the demo user dynamically
-    console.log('🔧 Development mode - finding demo user');
+    // First, try to verify if there's a valid JWT token (for admin/real users)
+    const authHeader = req.headers.authorization || req.header("Authorization");
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret_key_for_development');
+
+        // If token is valid, use the decoded user (admin/subadmin/real student)
+        req.user = decoded;
+        console.log('✅ Valid token found, user role:', decoded.role);
+        return next();
+      } catch (tokenError) {
+        console.log('⚠️ Invalid token provided, falling back to demo user');
+      }
+    }
+
+    // If no valid token, use demo student user (for student-only routes)
+    console.log('🔧 Development mode - using demo student user');
     const User = require("../models/UserSchema");
 
     const demoEmail = 'demo@test.com';
@@ -37,7 +54,7 @@ const authMiddleware = async (req, res, next) => {
         email: demoUser.email || 'demo@test.com',
         name: demoUser.name || 'Demo Student'
       };
-      console.log('✅ Demo user found:', req.user.id);
+      console.log('✅ Demo student user found:', req.user.id);
     } else {
       // Fallback to hardcoded user
       req.user = {
@@ -46,7 +63,7 @@ const authMiddleware = async (req, res, next) => {
         email: 'demo@test.com',
         name: 'Demo Student'
       };
-      console.log('⚠️ Demo user not found, using fallback ID');
+      console.log('⚠️ Demo user not found, using hardcoded fallback');
     }
 
     return next();
