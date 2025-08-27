@@ -61,15 +61,37 @@ const curriculumData = [
 
 const CoursePurchase = () => {
 
-  const [activeIndex, setActiveIndex] = useState(0); 
+  const [activeIndex, setActiveIndex] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
-  const course = location.state;
+
+  // Provide fallback course data if location.state is null
+  const course = location.state || {
+    _id: '6835a4fcf528e08ff15a566e', // Default course ID
+    name: 'CAT 2025 Full Course',
+    price: 1500,
+    description: 'Complete CAT preparation course',
+    features: [
+      'Complete CAT preparation material',
+      'Live interactive classes',
+      'Mock tests and practice sets',
+      'Doubt clearing sessions',
+      'Performance analysis',
+      'Study materials download'
+    ]
+  };
 
 const handlePayment = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) {
     alert("❌ Please login first! Use the 👤 button in the top notification bar, or click '🔧 Demo Login' below");
+    return;
+  }
+
+  // Validate course object
+  if (!course || !course._id) {
+    alert("❌ Course information not available. Please go back and select a course.");
+    navigate('/');
     return;
   }
 
@@ -136,11 +158,12 @@ const handlePayment = async () => {
     }
 
     // ✅ 2️⃣ Fetch actual course details and set amount
-    let amountInPaise = (course.price || 1500) * 100; // Default amount
-    let courseName = course.name || "Course Purchase"; // Default course name
+    let amountInPaise = ((course && course.price) || 1500) * 100; // Default amount
+    let courseName = (course && course.name) || "Course Purchase"; // Default course name
 
     try {
-      const courseRes = await fetch(`/api/courses/${course._id}`);
+      const courseId = (course && course._id) || '6835a4fcf528e08ff15a566e';
+      const courseRes = await fetch(`/api/courses/${courseId}`);
 
       if (courseRes.ok) {
         const courseData = await courseRes.json();
