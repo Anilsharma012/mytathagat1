@@ -527,7 +527,7 @@ The purpose of lorem ipsum is to create a natural looking block of text (sentenc
     }}
     onClick={async () => {
       try {
-        console.log('🔧 Demo login clicked, course data:', course);
+        console.log('🔧 Demo purchase clicked, course data:', course);
 
         // Step 1: Get fresh dev token and store it
         const loginRes = await fetch('/api/dev/login', { method: 'POST' });
@@ -537,15 +537,26 @@ The purpose of lorem ipsum is to create a natural looking block of text (sentenc
           localStorage.setItem('authToken', loginData.token);
           localStorage.setItem('user', JSON.stringify(loginData.user));
 
-          // Step 2: Show success and redirect to dashboard
-          alert('✅ Demo login successful! Course access granted.');
-          alert(`ℹ️ Course: ${course?.name || 'Default Course'} - Go to Student Dashboard → My Courses to see unlocked courses`);
-          window.location.href = '/student/dashboard';
+          // Step 2: Unlock the course using dev payment endpoint
+          const unlockRes = await fetch('/api/dev-payment/unlock-course-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ courseId: course?._id || '6835a4fcf528e08ff15a566e' })
+          });
+
+          const unlockData = await unlockRes.json();
+          if (unlockData.success) {
+            alert('✅ Demo course purchase successful!');
+            alert(`ℹ️ Course "${course?.name || 'Default Course'}" unlocked! Go to Student Dashboard → My Courses`);
+            window.location.href = '/student/dashboard';
+          } else {
+            alert('❌ Course unlock failed: ' + unlockData.message);
+          }
         } else {
           alert('❌ Demo login failed');
         }
       } catch (error) {
-        console.error('Demo login error:', error);
+        console.error('Demo purchase error:', error);
         alert('❌ Error: ' + error.message);
       }
     }}
