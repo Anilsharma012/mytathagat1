@@ -12,19 +12,85 @@ const verifyToken = (req) => {
 };
 
 // ✅ 1. Normal user middleware
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   console.log('🔍 Auth Middleware called for:', req.method, req.path);
   console.log('NODE_ENV:', process.env.NODE_ENV);
 
-  // Always allow in development with fallback user
-  console.log('🔧 Development mode - allowing request with demo user');
-  req.user = {
-    id: '507f1f77bcf86cd799439011',
-    role: 'student',
-    email: 'demo@test.com',
-    name: 'Demo Student'
-  };
-  return next();
+  try {
+    // First, try to verify if there's a valid JWT token (for admin/real users)
+    const authHeader = req.headers.authorization || req.header("Authorization");
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+
+        // In development mode, check for admin token shortcut
+        if (process.env.NODE_ENV === 'development' && token.includes('admin')) {
+          console.log('🔧 Development admin token detected, using admin user');
+          req.user = {
+            id: 'admin-dev-id',
+            role: 'admin',
+            email: 'admin@dev.com',
+            name: 'Development Admin'
+          };
+          return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret_key_for_development');
+
+        // If token is valid, use the decoded user (admin/subadmin/real student)
+        req.user = decoded;
+        console.log('✅ Valid JWT token found, user role:', decoded.role);
+        return next();
+      } catch (tokenError) {
+        console.log('⚠️ Invalid token provided, falling back to demo user');
+      }
+    }
+
+    // If no valid token, use demo student user (for student-only routes)
+    console.log('🔧 Development mode - using demo student user');
+    const User = require("../models/UserSchema");
+
+    const demoEmail = 'demo@test.com';
+    let demoUser = await User.findOne({ email: demoEmail });
+
+    // If not found, try by hardcoded ID as fallback
+    if (!demoUser) {
+      const demoUserId = '507f1f77bcf86cd799439011';
+      demoUser = await User.findById(demoUserId);
+    }
+
+    if (demoUser) {
+      req.user = {
+        id: demoUser._id.toString(),
+        role: 'student',
+        email: demoUser.email || 'demo@test.com',
+        name: demoUser.name || 'Demo Student'
+      };
+      console.log('✅ Demo student user found:', req.user.id);
+    } else {
+      // Fallback to hardcoded user
+      req.user = {
+        id: '507f1f77bcf86cd799439011',
+        role: 'student',
+        email: 'demo@test.com',
+        name: 'Demo Student'
+      };
+      console.log('⚠️ Demo user not found, using hardcoded fallback');
+    }
+
+    return next();
+  } catch (error) {
+    console.error('Error in authMiddleware:', error);
+    // Fallback to hardcoded user on error
+    req.user = {
+      id: '507f1f77bcf86cd799439011',
+      role: 'student',
+      email: 'demo@test.com',
+      name: 'Demo Student'
+    };
+    return next();
+  }
 };
 
 // ✅ 2. Admin + Subadmin access middleware

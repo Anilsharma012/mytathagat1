@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import "./Mycourse.css";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
+import axios from "../../utils/axiosConfig";
 
 const Mycourse = () => {
   const [courses, setCourses] = useState([]);
@@ -13,21 +14,31 @@ const Mycourse = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/courses/student/published-courses")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setCourses(data.courses);
+    const fetchCourses = async () => {
+      try {
+        console.log('🔍 Fetching published courses...');
+        const response = await axios.get("/api/courses/student/published-courses");
+        console.log('✅ Courses response:', response.data);
+
+        if (response.data.success) {
+          setCourses(response.data.courses);
         } else {
+          console.error('❌ Failed response:', response.data);
           setError("Failed to load courses");
         }
+      } catch (err) {
+        console.error("❌ Failed to load courses:", err);
+        if (err.response?.status === 403) {
+          setError("Access denied - please check your authentication");
+        } else {
+          setError("Something went wrong loading courses");
+        }
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error("Fetch error:", err);
-        setError("Something went wrong");
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchCourses();
   }, []);
 
   const visibleCourses = showAll ? courses : courses.slice(0, 2);

@@ -13,7 +13,8 @@ axios.defaults.timeout = 10000;
 // Add request interceptor for debugging
 axios.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    // Check for token in all possible localStorage keys
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,8 +36,11 @@ axios.interceptors.response.use(
   (error) => {
     console.error('Response error:', error.response?.status, error.response?.data || error.message);
     if (error.response?.status === 401) {
+      // Clear all possible token keys on unauthorized
+      localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       localStorage.removeItem('adminToken');
+      localStorage.removeItem('user');
     }
     return Promise.reject(error);
   }

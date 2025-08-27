@@ -841,7 +841,16 @@ const loadMyCourses = async () => {
                     <span className="progress-text">45% Complete</span>
                   </div>
                   <div className="course-actions">
-                    <button className="continue-btn primary">
+                    <button
+                      className="continue-btn primary"
+                      onClick={() => {
+                        if (course && course._id) {
+                          navigate(`/student/course/${course._id}`);
+                        } else {
+                          console.error('Course ID not found:', course);
+                        }
+                      }}
+                    >
                       <FiPlay /> Continue Learning
                     </button>
                     <button className="info-btn">

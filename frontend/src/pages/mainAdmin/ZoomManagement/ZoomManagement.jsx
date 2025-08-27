@@ -25,9 +25,13 @@ const ZoomManagement = () => {
 
     const fetchCourses = async () => {
         try {
-            const response = await axios.get('/api/courses');
-            setCourses(response.data);
+            const token = localStorage.getItem("adminToken");
+            const response = await axios.get('/api/courses', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setCourses(response.data.courses || response.data || []);
         } catch (error) {
+            console.error('Error fetching courses:', error);
             toast.error('Error fetching courses');
         }
     };
@@ -106,7 +110,7 @@ const ZoomManagement = () => {
                     <option value="">Select a course</option>
                     {courses.map(course => (
                         <option key={course._id} value={course._id}>
-                            {course.title}
+                            {course.name || course.title || 'Unnamed Course'}
                         </option>
                     ))}
                 </select>
@@ -198,7 +202,7 @@ const ZoomManagement = () => {
                                     <option value="">Select a course</option>
                                     {courses.map(course => (
                                         <option key={course._id} value={course._id}>
-                                            {course.title}
+                                            {course.name || course.title || 'Unnamed Course'}
                                         </option>
                                     ))}
                                 </select>

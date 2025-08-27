@@ -38,9 +38,13 @@ router.post(
   createCourse
 );
 
-// ✅ READ all courses or by ID
-router.get("/", authMiddleware, checkPermission("course_read"), getCourses);
+// ✅ PUBLIC routes first (before parameter routes that can match anything)
+// ✅ GET published courses for student LMS (no auth needed)
+router.get("/student/published-courses", getPublishedCourses);
+router.get("/student/published-courses/:id", getPublishedCourseById);
 
+// ✅ READ all courses or by ID (ADMIN - after public routes)
+router.get("/", authMiddleware, checkPermission("course_read"), getCourses);
 
 router.get(
   "/:id",
@@ -66,9 +70,6 @@ router.delete(
   deleteCourse
 );
 
-
-router.get("/student/published-courses/:id", getPublishedCourseById);
-
 // ✅ TOGGLE lock/unlock
 router.put(
   "/toggle-lock/:id",
@@ -84,8 +85,5 @@ router.put(
   checkPermission("course_update"),
   togglePublish
 );
-
-// ✅ GET published courses for student LMS (no auth needed)
-router.get("/student/published-courses", getPublishedCourses);
 
 module.exports = router;
