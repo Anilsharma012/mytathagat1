@@ -69,8 +69,45 @@ const CoursePurchase = () => {
 const handlePayment = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) {
-    alert("❌ Please login again!");
+    alert("❌ Please login first! Use the 👤 button in top-right corner");
     return;
+  }
+
+  // Development bypass - direct course unlock
+  if (process.env.NODE_ENV === 'development') {
+    const confirmed = window.confirm("🔧 Development Mode: Skip payment and directly unlock course?");
+    if (confirmed) {
+      try {
+        const response = await fetch("/api/user/payment/verify-and-unlock", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            razorpay_order_id: 'dev_order_' + Date.now(),
+            razorpay_payment_id: 'dev_payment_' + Date.now(),
+            razorpay_signature: 'dev_signature',
+            courseId: course._id
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            alert("✅ Development course unlock successful!");
+            navigate("/student/dashboard", {
+              state: { showMyCourses: true, refreshCourses: true }
+            });
+            return;
+          }
+        }
+        alert("❌ Development unlock failed, proceeding with normal payment...");
+      } catch (error) {
+        console.error('Development unlock error:', error);
+        alert("❌ Development unlock error, proceeding with normal payment...");
+      }
+    }
   }
 
   try {
@@ -81,24 +118,45 @@ const handlePayment = async () => {
       }
     });
 
-    const checkData = await checkRes.json();
-    const alreadyUnlocked = checkData.courses.some(c => c._id === course._id);
+    if (!checkRes.ok) {
+      console.warn(`My courses check failed with status: ${checkRes.status}`);
+      // Continue with purchase even if check fails
+    } else {
+      try {
+        const checkData = await checkRes.json();
+        const alreadyUnlocked = checkData.courses && checkData.courses.some(c => c._id === course._id);
 
-    if (alreadyUnlocked) {
-      alert("✅ You have already purchased/unlocked this course.");
-      return;
+        if (alreadyUnlocked) {
+          alert("✅ You have already purchased/unlocked this course.");
+          return;
+        }
+      } catch (jsonError) {
+        console.warn('Failed to parse my-courses response, continuing with purchase');
+      }
     }
 
     // ✅ 2️⃣ Fetch actual course details
     const courseRes = await fetch(`/api/courses/${course._id}`);
-    const courseData = await courseRes.json();
 
-    if (!courseData.course) {
-      alert("❌ Course not found");
-      return;
+    if (!courseRes.ok) {
+      console.warn(`Course fetch failed with status: ${courseRes.status}, using passed course data`);
+      // Use the course data passed to the function
+      const amountInPaise = (course.price || 1500) * 100; // Default to ₹1500 if no price
+    } else {
+      try {
+        const courseData = await courseRes.json();
+
+        if (!courseData.course) {
+          alert("❌ Course not found");
+          return;
+        }
+
+        var amountInPaise = courseData.course.price * 100;
+      } catch (jsonError) {
+        console.warn('Failed to parse course response, using default price');
+        var amountInPaise = (course.price || 1500) * 100;
+      }
     }
-
-    const amountInPaise = courseData.course.price * 100;
 
     // ✅ 3️⃣ Create Razorpay order
     const orderRes = await fetch("/api/user/payment/create-order", {
@@ -110,9 +168,21 @@ const handlePayment = async () => {
       body: JSON.stringify({ amount: amountInPaise })
     });
 
-    const orderData = await orderRes.json();
+    if (!orderRes.ok) {
+      alert(`❌ Failed to create order: ${orderRes.status} ${orderRes.statusText}`);
+      return;
+    }
+
+    let orderData;
+    try {
+      orderData = await orderRes.json();
+    } catch (jsonError) {
+      alert("❌ Failed to parse order response");
+      return;
+    }
+
     if (!orderData.success) {
-      alert("❌ Failed to create order");
+      alert("❌ Failed to create order: " + (orderData.message || 'Unknown error'));
       return;
     }
 
