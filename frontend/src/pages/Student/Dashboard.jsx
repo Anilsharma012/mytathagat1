@@ -845,7 +845,7 @@ const loadMyCourses = async () => {
                       className="continue-btn primary"
                       onClick={() => {
                         if (course && course._id) {
-                          navigate(`/student/course/${course._id}`);
+                          navigate(`/student/course-content/${course._id}`);
                         } else {
                           console.error('Course ID not found:', course);
                         }
