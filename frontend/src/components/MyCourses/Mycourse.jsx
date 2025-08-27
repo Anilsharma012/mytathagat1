@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import "./Mycourse.css";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
+import axios from "../../utils/axiosConfig";
 
 const Mycourse = () => {
   const [courses, setCourses] = useState([]);
