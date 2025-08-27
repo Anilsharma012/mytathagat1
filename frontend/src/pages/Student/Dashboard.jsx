@@ -356,7 +356,7 @@ const loadMyCourses = async () => {
 
         if (alreadyEnrolled) {
           alert('✅ You are already enrolled in this course!');
-          setActiveSection('courses'); // Switch to My Courses section
+          setActiveSection('my-courses'); // Switch to My Courses section
           return;
         }
       }
