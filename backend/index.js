@@ -105,26 +105,28 @@ app.post("/api/dev/login", async (req, res) => {
 
         console.log('🔍 Development login request received');
 
-        // Find or create a real demo user
-        let demoUser = await User.findOne({ email: 'demo@test.com' });
-
-        if (!demoUser) {
-            demoUser = new User({
-                email: 'demo@test.com',
-                phoneNumber: '9999999999',
-                name: 'Demo Student',
-                isEmailVerified: true,
-                isPhoneVerified: true,
-                city: 'Demo City',
-                gender: 'Male',
-                dob: new Date('1995-01-01'),
-                selectedCategory: 'CAT',
-                selectedExam: 'CAT 2025',
-                enrolledCourses: []
-            });
-            await demoUser.save();
-            console.log('✅ Demo user created in database with ID:', demoUser._id);
-        }
+        // Find or create a real demo user with atomic upsert
+        const demoEmail = 'demo@test.com';
+        let demoUser = await User.findOneAndUpdate(
+            { email: demoEmail },
+            {
+                $setOnInsert: {
+                    email: demoEmail,
+                    phoneNumber: '9999999999',
+                    name: 'Demo Student',
+                    isEmailVerified: true,
+                    isPhoneVerified: true,
+                    city: 'Demo City',
+                    gender: 'Male',
+                    dob: new Date('1995-01-01'),
+                    selectedCategory: 'CAT',
+                    selectedExam: 'CAT 2025',
+                    enrolledCourses: []
+                }
+            },
+            { upsert: true, new: true }
+        );
+        console.log('✅ Demo user ready in database with ID:', demoUser._id);
 
         const jwtSecret = process.env.JWT_SECRET || 'test_secret_key_for_development';
         const token = jwt.sign(
@@ -172,26 +174,28 @@ app.post("/api/dev/unlock-course", async (req, res) => {
 
         const User = require('./models/UserSchema');
 
-        // Find or create demo user
-        let demoUser = await User.findOne({ email: 'demo@test.com' });
-
-        if (!demoUser) {
-            demoUser = new User({
-                email: 'demo@test.com',
-                phoneNumber: '9999999999',
-                name: 'Demo Student',
-                isEmailVerified: true,
-                isPhoneVerified: true,
-                city: 'Demo City',
-                gender: 'Male',
-                dob: new Date('1995-01-01'),
-                selectedCategory: 'CAT',
-                selectedExam: 'CAT 2025',
-                enrolledCourses: []
-            });
-            await demoUser.save();
-            console.log('✅ Demo user created');
-        }
+        // Find or create demo user with atomic upsert
+        const demoEmail = 'demo@test.com';
+        let demoUser = await User.findOneAndUpdate(
+            { email: demoEmail },
+            {
+                $setOnInsert: {
+                    email: demoEmail,
+                    phoneNumber: '9999999999',
+                    name: 'Demo Student',
+                    isEmailVerified: true,
+                    isPhoneVerified: true,
+                    city: 'Demo City',
+                    gender: 'Male',
+                    dob: new Date('1995-01-01'),
+                    selectedCategory: 'CAT',
+                    selectedExam: 'CAT 2025',
+                    enrolledCourses: []
+                }
+            },
+            { upsert: true, new: true }
+        );
+        console.log('✅ Demo user ready:', demoUser._id);
 
         // Check if course is already unlocked
         const existingCourse = demoUser.enrolledCourses.find(
@@ -608,28 +612,32 @@ app.post("/api/dev-payment/unlock-course-payment", async (req, res) => {
 
         const User = require('./models/UserSchema');
 
-        // Find or create demo user with fixed ID
+        // Find or create demo user with fixed ID (atomic operation to prevent race conditions)
         const demoUserId = '507f1f77bcf86cd799439011';
-        let demoUser = await User.findById(demoUserId);
+        const demoEmail = 'demo@test.com';
 
-        if (!demoUser) {
-            demoUser = new User({
-                _id: demoUserId,
-                email: 'demo@test.com',
-                phoneNumber: '9999999999',
-                name: 'Demo Student',
-                isEmailVerified: true,
-                isPhoneVerified: true,
-                city: 'Demo City',
-                gender: 'Male',
-                dob: new Date('1995-01-01'),
-                selectedCategory: 'CAT',
-                selectedExam: 'CAT 2025',
-                enrolledCourses: []
-            });
-            await demoUser.save();
-            console.log('✅ Demo user created');
-        }
+        let demoUser = await User.findOneAndUpdate(
+            { email: demoEmail },
+            {
+                $setOnInsert: {
+                    _id: demoUserId,
+                    email: demoEmail,
+                    phoneNumber: '9999999999',
+                    name: 'Demo Student',
+                    isEmailVerified: true,
+                    isPhoneVerified: true,
+                    city: 'Demo City',
+                    gender: 'Male',
+                    dob: new Date('1995-01-01'),
+                    selectedCategory: 'CAT',
+                    selectedExam: 'CAT 2025',
+                    enrolledCourses: []
+                }
+            },
+            { upsert: true, new: true }
+        );
+
+        console.log('✅ Demo user ready:', demoUser._id);
 
         // Check if course is already unlocked
         const existingCourse = demoUser.enrolledCourses.find(
@@ -678,24 +686,46 @@ app.get("/api/dev-payment/my-courses", async (req, res) => {
         console.log('🔧 Development my-courses requested');
 
         const User = require('./models/UserSchema');
-        const demoUserId = '507f1f77bcf86cd799439011';
-        const demoUser = await User.findById(demoUserId).populate('enrolledCourses.courseId');
+
+        // First try to find demo user by email (consistent with other endpoints)
+        const demoEmail = 'demo@test.com';
+        let demoUser = await User.findOne({ email: demoEmail }).populate('enrolledCourses.courseId');
+
+        // If not found, try by hardcoded ID as fallback
+        if (!demoUser) {
+            const demoUserId = '507f1f77bcf86cd799439011';
+            demoUser = await User.findById(demoUserId).populate('enrolledCourses.courseId');
+        }
+
+        console.log('👤 Demo user found:', demoUser ? demoUser._id : 'NOT FOUND');
 
         if (!demoUser) {
+            console.log('⚠️ No demo user found, returning empty courses');
             return res.status(200).json({
                 success: true,
                 courses: []
             });
         }
 
+        console.log('📚 Demo user enrolled courses:', demoUser.enrolledCourses);
+        console.log('📊 Total enrolled courses count:', demoUser.enrolledCourses.length);
+
         const unlockedCourses = demoUser.enrolledCourses
-            .filter(c => c.status === "unlocked" && c.courseId)
+            .filter(c => {
+                console.log('🔍 Dev endpoint checking course:', c);
+                console.log('   - Status:', c.status);
+                console.log('   - CourseId:', c.courseId);
+                return c.status === "unlocked" && c.courseId;
+            })
             .map(c => ({
                 _id: c._id,
                 status: c.status,
                 enrolledAt: c.enrolledAt,
                 courseId: c.courseId,
             }));
+
+        console.log('🎯 Dev endpoint filtered unlocked courses:', unlockedCourses);
+        console.log('📊 Dev endpoint returning courses count:', unlockedCourses.length);
 
         res.status(200).json({
             success: true,

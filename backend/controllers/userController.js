@@ -260,27 +260,39 @@ exports.getUnlockedCourses = async (req, res) => {
     if (process.env.NODE_ENV === 'development' || userId === '507f1f77bcf86cd799439011') {
       console.log('🔧 Development mode - handling demo user');
 
-      let demoUser = await User.findOne({ email: 'demo@test.com' });
-      if (!demoUser) {
-        demoUser = new User({
-          email: 'demo@test.com',
-          phoneNumber: '9999999999',
-          name: 'Demo Student',
-          isEmailVerified: true,
-          isPhoneVerified: true,
-          city: 'Demo City',
-          gender: 'Male',
-          dob: new Date('1995-01-01'),
-          selectedCategory: 'CAT',
-          selectedExam: 'CAT 2025',
-          enrolledCourses: []
-        });
-        await demoUser.save();
-        console.log('✅ Demo user created with ID:', demoUser._id);
-      }
+      // Use atomic upsert to avoid race conditions
+      const demoEmail = 'demo@test.com';
+      let demoUser = await User.findOneAndUpdate(
+        { email: demoEmail },
+        {
+          $setOnInsert: {
+            email: demoEmail,
+            phoneNumber: '9999999999',
+            name: 'Demo Student',
+            isEmailVerified: true,
+            isPhoneVerified: true,
+            city: 'Demo City',
+            gender: 'Male',
+            dob: new Date('1995-01-01'),
+            selectedCategory: 'CAT',
+            selectedExam: 'CAT 2025',
+            enrolledCourses: []
+          }
+        },
+        { upsert: true, new: true }
+      ).populate('enrolledCourses.courseId');
+
+      console.log('✅ Demo user ready with ID:', demoUser._id);
+      console.log('📚 Demo user enrolled courses:', demoUser.enrolledCourses);
+      console.log('📊 Total enrolled courses count:', demoUser.enrolledCourses.length);
 
       const unlockedCourses = demoUser.enrolledCourses
-        .filter(c => c.status === "unlocked" && c.courseId)
+        .filter(c => {
+          console.log('🔍 Checking course:', c);
+          console.log('   - Status:', c.status);
+          console.log('   - CourseId:', c.courseId);
+          return c.status === "unlocked" && c.courseId;
+        })
         .map(c => ({
           _id: c._id,
           status: c.status,
@@ -288,6 +300,8 @@ exports.getUnlockedCourses = async (req, res) => {
           courseId: c.courseId,
         }));
 
+      console.log('🎯 Filtered unlocked courses:', unlockedCourses);
+      console.log('📊 Returning courses count:', unlockedCourses.length);
       return res.status(200).json({ success: true, courses: unlockedCourses });
     }
 
@@ -533,36 +547,65 @@ exports.verifyAndUnlockPayment = async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
     console.log("✅ verifyAndUnlockPayment hit with courseId:", courseId);
 
+    // Validate required fields
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "courseId is required"
+      });
+    }
+
+    // For production mode, validate payment fields
+    if (process.env.NODE_ENV !== 'development') {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment verification fields are required"
+        });
+      }
+    }
+
     // Development bypass - skip signature verification, use actual user from token
-    if (process.env.NODE_ENV === 'development' || razorpay_order_id.startsWith('dev_')) {
+    if (process.env.NODE_ENV === 'development' || (razorpay_order_id && razorpay_order_id.startsWith('dev_'))) {
       console.log('🔧 Development mode - skipping payment verification');
       console.log('🔍 Using user from token:', req.user);
 
-      // Find user by ID from token, or create demo user as fallback
+      // Find user by ID from token, or use/create demo user as fallback
       let user = await User.findById(req.user.id);
 
       if (!user) {
-        console.log('⚠️ User not found by token ID, creating demo user');
-        user = new User({
-          _id: req.user.id, // Use the ID from token
-          email: req.user.email || 'demo@test.com',
-          phoneNumber: '9999999999',
-          name: req.user.name || 'Demo Student',
-          isEmailVerified: true,
-          isPhoneVerified: true,
-          city: 'Demo City',
-          gender: 'Male',
-          dob: new Date('1995-01-01'),
-          selectedCategory: 'CAT',
-          selectedExam: 'CAT 2025',
-          enrolledCourses: []
-        });
-        await user.save();
-        console.log('✅ Demo user created with token ID');
+        console.log('⚠️ User not found by token ID, using demo user fallback');
+
+        // Use a consistent demo user to avoid phoneNumber conflicts
+        const demoEmail = 'demo@test.com';
+        user = await User.findOneAndUpdate(
+          { email: demoEmail },
+          {
+            $setOnInsert: {
+              email: demoEmail,
+              phoneNumber: '9999999999',
+              name: 'Demo Student',
+              isEmailVerified: true,
+              isPhoneVerified: true,
+              city: 'Demo City',
+              gender: 'Male',
+              dob: new Date('1995-01-01'),
+              selectedCategory: 'CAT',
+              selectedExam: 'CAT 2025',
+              enrolledCourses: []
+            }
+          },
+          { upsert: true, new: true }
+        );
+
+        console.log('✅ Using demo user:', user._id);
       }
 
       // Add course to enrolled courses
+      console.log('🔍 Current enrolled courses before adding:', user.enrolledCourses);
       const existingCourse = user.enrolledCourses.find(c => c.courseId && c.courseId.toString() === courseId);
+      console.log('🔍 Looking for existing course with ID:', courseId);
+      console.log('🔍 Existing course found:', existingCourse);
 
       if (!existingCourse) {
         user.enrolledCourses.push({
@@ -572,6 +615,7 @@ exports.verifyAndUnlockPayment = async (req, res) => {
         });
         await user.save();
         console.log('✅ Course unlocked for user:', user._id);
+        console.log('📚 Updated enrolled courses:', user.enrolledCourses);
       } else {
         console.log('ℹ️ Course already unlocked for user');
       }

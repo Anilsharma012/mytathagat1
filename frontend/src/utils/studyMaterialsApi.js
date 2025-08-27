@@ -55,7 +55,9 @@ export const downloadStudyMaterial = async (materialId) => {
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
       try {
-        const errorData = await response.json();
+        // Clone response to prevent body stream issues
+        const responseClone = response.clone();
+        const errorData = await responseClone.json();
         errorMessage = errorData.message || errorMessage;
       } catch (parseError) {
         // If JSON parsing fails, use default message

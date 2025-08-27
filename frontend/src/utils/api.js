@@ -323,8 +323,12 @@ export const fetchWithErrorHandling = async (url, options = {}) => {
     // Try to parse JSON first, then handle errors
     let responseData;
     let parseSuccess = false;
+
     try {
-      const text = await response.text();
+      // Clone the response to allow multiple reads if needed
+      const responseClone = response.clone();
+      const text = await responseClone.text();
+
       if (!text || text.trim() === '') {
         throw new Error('Empty response body');
       }
@@ -353,7 +357,7 @@ export const fetchWithErrorHandling = async (url, options = {}) => {
     }
 
     if (!response.ok) {
-      // Now we can safely access the response data without re-reading the stream
+      // Use the already parsed data or create error message
       const errorMessage = responseData.message || `HTTP ${response.status}: ${response.statusText}`;
       throw new Error(errorMessage);
     }
@@ -993,7 +997,7 @@ export const fetchMyCourses = async () => {
 export const startMockTest = async (testId) => {
   try {
     const authToken = localStorage.getItem('authToken');
-    console.log('🚀 Starting mock test with token:', authToken ? 'Present' : 'Missing');
+    console.log('�� Starting mock test with token:', authToken ? 'Present' : 'Missing');
 
     if (!authToken) {
       throw new Error('Authentication required. Please log in to start the test.');
@@ -1045,22 +1049,34 @@ export const safeFetch = async (url, options = {}) => {
   try {
     const response = await fetch(url, options);
 
+    // Clone response to avoid body stream already read errors
+    const responseClone = response.clone();
     let data;
     let parseSuccess = false;
 
     try {
-      data = await response.json();
+      data = await responseClone.json();
       parseSuccess = true;
     } catch (parseError) {
       console.warn('Failed to parse response as JSON:', parseError);
-      data = {
-        success: false,
-        message: `Server returned ${response.status}: ${response.statusText}`
-      };
+      // Try to get text from the original response as fallback
+      try {
+        const text = await response.text();
+        data = {
+          success: false,
+          message: `Server returned ${response.status}: ${response.statusText}`,
+          rawResponse: text.substring(0, 500) // Include first 500 chars for debugging
+        };
+      } catch (textError) {
+        data = {
+          success: false,
+          message: `Server returned ${response.status}: ${response.statusText}`
+        };
+      }
     }
 
     return {
-      response,
+      response: response.clone(), // Return a clone to prevent body stream issues
       data,
       parseSuccess,
       ok: response.ok,

@@ -163,13 +163,17 @@ const loadMyCourses = async () => {
   }
 
   setMyCoursesLoading(true);
+  console.log('🔄 loadMyCourses: Starting to fetch courses...');
 
   try {
     // Try dev payment endpoint first
+    console.log('🔧 Trying dev endpoint: /api/dev-payment/my-courses');
     let response = await fetch('/api/dev-payment/my-courses');
+    console.log('📊 Dev endpoint response status:', response.status);
 
     // If that fails, try regular endpoint
     if (!response.ok) {
+      console.log('🔄 Dev endpoint failed, trying regular endpoint: /api/user/student/my-courses');
       response = await fetch('/api/user/student/my-courses', {
         method: 'GET',
         headers: {
@@ -177,70 +181,48 @@ const loadMyCourses = async () => {
           'Content-Type': 'application/json'
         }
       });
+      console.log('📊 Regular endpoint response status:', response.status);
     }
 
     if (!response.ok) {
-      console.warn(`⚠️ API responded with status ${response.status}, showing demo courses`);
-      // Show demo courses if user is logged in
-      const demoUser = JSON.parse(localStorage.getItem('user') || '{}');
-      if (demoUser.name) {
-        setMyCourses([
-          {
-            _id: 'demo_enrollment_1',
-            status: 'unlocked',
-            enrolledAt: new Date(),
-            courseId: {
-              _id: '6835a4fcf528e08ff15a566e',
-              name: 'CAT 2025 Full Course',
-              description: 'Complete CAT preparation course',
-              price: 1500,
-              thumbnail: '1748346152822-resourcesOne.png'
-            }
-          }
-        ]);
-        console.log('✅ Showing demo courses for logged in user');
-      } else {
-        setMyCourses([]);
-      }
+      console.warn(`⚠️ API responded with status ${response.status}`);
+      console.warn('⚠️ API call failed - not showing demo courses to avoid conflicts');
+      setMyCourses([]);
       return;
     }
 
     const data = await response.json();
     console.log("📦 My Courses Response:", data);
+    console.log("🔍 Response structure analysis:");
+    console.log("   - data.courses:", data.courses);
+    console.log("   - Array.isArray(data.courses):", Array.isArray(data.courses));
+    console.log("   - data.courses length:", data.courses ? data.courses.length : 'N/A');
 
+    // Handle different response formats
+    let coursesArray = [];
     if (Array.isArray(data.courses)) {
-      setMyCourses(data.courses);
+      coursesArray = data.courses;
+      console.log('✅ Using data.courses array');
+    } else if (Array.isArray(data)) {
+      coursesArray = data;
+      console.log('✅ Using data as array');
+    } else if (data.data && Array.isArray(data.data)) {
+      coursesArray = data.data;
+      console.log('✅ Using data.data array');
     } else {
-      console.warn('⚠️ No "courses" array found in response:', data);
-      setMyCourses([]);
+      console.warn('⚠️ No courses array found in response:', data);
     }
+
+    console.log('📚 Final courses array:', coursesArray);
+    console.log('📊 Setting courses count:', coursesArray.length);
+    setMyCourses(coursesArray);
 
   } catch (error) {
     console.error('❌ Error fetching my courses:', error);
 
-    // Show demo courses as fallback for logged in users
-    const authToken = localStorage.getItem('authToken');
-    const demoUser = JSON.parse(localStorage.getItem('user') || '{}');
-
-    if (authToken && demoUser.name) {
-      setMyCourses([
-        {
-          _id: 'demo_enrollment_1',
-          status: 'unlocked',
-          enrolledAt: new Date(),
-          courseId: {
-            _id: '6835a4fcf528e08ff15a566e',
-            name: 'CAT 2025 Full Course',
-            description: 'Complete CAT preparation course',
-            price: 1500,
-            thumbnail: '1748346152822-resourcesOne.png'
-          }
-        }
-      ]);
-      console.log('✅ Showing demo courses as fallback');
-    } else {
-      setMyCourses([]);
-    }
+    // Don't show demo courses as fallback to avoid enrollment conflicts
+    console.error('❌ Failed to load my courses - showing empty state');
+    setMyCourses([]);
   } finally {
     setMyCoursesLoading(false);
   }
@@ -256,9 +238,13 @@ const loadMyCourses = async () => {
   // Handle payment success redirect
   useEffect(() => {
     if (location.state?.showMyCourses) {
-      setActiveSection('courses');
+      setActiveSection('my-courses'); // Navigate to My Courses section
+
+      // Immediate refresh to show purchased course
+      loadMyCourses();
+
       if (location.state?.refreshCourses) {
-        // Refresh courses after payment
+        // Additional refresh after a delay to ensure data is updated
         setTimeout(() => {
           loadMyCourses();
           loadCourses(); // Also refresh available courses
@@ -273,7 +259,8 @@ const loadMyCourses = async () => {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       const interval = setInterval(() => {
-        if (activeSection === 'courses') {
+        if (activeSection === 'my-courses') {
+          console.log('🔄 Dev mode: Refreshing My Courses...');
           loadMyCourses();
         }
       }, 5000); // Refresh every 5 seconds in dev mode
@@ -313,7 +300,7 @@ const loadMyCourses = async () => {
         // Refresh my courses
         setTimeout(() => {
           loadMyCourses();
-          setActiveSection('courses'); // Switch to My Courses
+          setActiveSection('my-courses'); // Switch to My Courses
         }, 1000);
       } else {
         alert('❌ Demo purchase failed: ' + data.message);
@@ -349,11 +336,27 @@ const loadMyCourses = async () => {
 
       if (response.ok) {
         const data = await response.json();
-        const alreadyEnrolled = data.courses?.some(c => c._id === course._id);
+        console.log('🔍 Checking enrollment for course:', course._id);
+        console.log('📚 User enrolled courses:', data.courses);
+
+        // Fix: Compare against courseId._id (populated course object) not c._id (enrollment ID)
+        // Also filter out demo enrollments with fake IDs
+        const realEnrollments = (data.courses || []).filter(c =>
+          c._id && !c._id.toString().startsWith('demo_')
+        );
+
+        const alreadyEnrolled = course && realEnrollments.some(c => {
+          const enrolledCourseId = (c.courseId && c.courseId._id) || c.courseId;
+          const matches = enrolledCourseId && enrolledCourseId.toString() === course._id.toString();
+          console.log(`📋 Comparing ${enrolledCourseId} with ${course._id}: ${matches}`);
+          return matches;
+        });
+
+        console.log('✅ Final enrollment check result:', alreadyEnrolled);
 
         if (alreadyEnrolled) {
           alert('✅ You are already enrolled in this course!');
-          setActiveSection('courses'); // Switch to My Courses section
+          setActiveSection('my-courses'); // Switch to My Courses section
           return;
         }
       }
@@ -482,7 +485,9 @@ const loadMyCourses = async () => {
       } else {
         let errorMessage = 'Failed to download material';
         try {
-          const errorData = await response.json();
+          // Clone response to prevent body stream issues
+          const responseClone = response.clone();
+          const errorData = await responseClone.json();
           errorMessage = errorData.message || errorMessage;
         } catch (parseError) {
           // If JSON parsing fails, use default message
@@ -781,8 +786,26 @@ const loadMyCourses = async () => {
         </div>
       ) : (
         <div className="courses-grid">
-          {myCourses.map((enrollmentData) => {
-            const course = enrollmentData.courseId || enrollmentData;
+          {myCourses.map((enrollmentData, index) => {
+            // Handle both populated courseId objects and string IDs
+            let course = enrollmentData.courseId || enrollmentData;
+
+            // If courseId is just a string, try to find the course in available courses
+            if (typeof course === 'string') {
+              const foundCourse = courses.find(c => c._id === course);
+              course = foundCourse || {
+                _id: course,
+                name: 'Course Details Loading...',
+                description: 'Course information is being loaded.',
+                thumbnail: 'default-course.png'
+              };
+            }
+
+            // Ensure course has required properties
+            if (!course._id) {
+              course._id = enrollmentData._id || `course-${index}`;
+            }
+
             return (
               <div key={course._id} className="course-card enrolled">
                 <div className="course-thumbnail">
