@@ -208,29 +208,9 @@ const loadMyCourses = async () => {
   } catch (error) {
     console.error('❌ Error fetching my courses:', error);
 
-    // Show demo courses as fallback for logged in users
-    const authToken = localStorage.getItem('authToken');
-    const demoUser = JSON.parse(localStorage.getItem('user') || '{}');
-
-    if (authToken && demoUser.name) {
-      setMyCourses([
-        {
-          _id: 'demo_enrollment_1',
-          status: 'unlocked',
-          enrolledAt: new Date(),
-          courseId: {
-            _id: '6835a4fcf528e08ff15a566e',
-            name: 'CAT 2025 Full Course',
-            description: 'Complete CAT preparation course',
-            price: 1500,
-            thumbnail: '1748346152822-resourcesOne.png'
-          }
-        }
-      ]);
-      console.log('✅ Showing demo courses as fallback');
-    } else {
-      setMyCourses([]);
-    }
+    // Don't show demo courses as fallback to avoid enrollment conflicts
+    console.error('❌ Failed to load my courses - showing empty state');
+    setMyCourses([]);
   } finally {
     setMyCoursesLoading(false);
   }
