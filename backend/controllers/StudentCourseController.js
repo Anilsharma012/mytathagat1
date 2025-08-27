@@ -219,7 +219,9 @@ exports.getStudentCourseStructure = async (req, res) => {
     const subjects = await Subject.find({ courseId }).sort({ order: 1 });
     const chapters = await Chapter.find({ courseId }).sort({ order: 1 });
     const topics = await Topic.find({ courseId }).sort({ order: 1 });
-    const tests = await Test.find({ courseId }).sort({ order: 1 });
+
+    // Fix: Use correct field names from Test model schema
+    const tests = await Test.find({ course: courseId }).sort({ title: 1 });
 
     console.log('🔍 DEBUG: Checking for tests in course:', courseId);
     console.log('📊 Subjects found:', subjects.length);
@@ -231,19 +233,19 @@ exports.getStudentCourseStructure = async (req, res) => {
     const allTests = await Test.find({}).limit(20);
     console.log('🧪 Sample tests in database:');
     allTests.forEach((test, i) => {
-      console.log(`  Test ${i}: ${test.title || test.name} | CourseId: ${test.courseId} | ChapterId: ${test.chapterId} | TopicId: ${test.topicId}`);
+      console.log(`  Test ${i}: ${test.title} | Course: ${test.course} | Chapter: ${test.chapter} | Topic: ${test.topic}`);
     });
 
     // Check for tests that might be associated directly with chapters
     const chaptersWithTests = await Test.find({
       $or: [
-        { courseId },
-        { chapterId: { $in: chapters.map(c => c._id) } }
+        { course: courseId },
+        { chapter: { $in: chapters.map(c => c._id) } }
       ]
     });
     console.log('🧪 Tests associated with this course or its chapters:', chaptersWithTests.length);
     chaptersWithTests.forEach((test, i) => {
-      console.log(`  Test ${i}: ${test.title || test.name} | CourseId: ${test.courseId} | ChapterId: ${test.chapterId} | TopicId: ${test.topicId}`);
+      console.log(`  Test ${i}: ${test.title} | Course: ${test.course} | Chapter: ${test.chapter} | Topic: ${test.topic}`);
     });
 
     // Organize the structure
