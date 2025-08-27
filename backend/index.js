@@ -608,28 +608,32 @@ app.post("/api/dev-payment/unlock-course-payment", async (req, res) => {
 
         const User = require('./models/UserSchema');
 
-        // Find or create demo user with fixed ID
+        // Find or create demo user with fixed ID (atomic operation to prevent race conditions)
         const demoUserId = '507f1f77bcf86cd799439011';
-        let demoUser = await User.findById(demoUserId);
+        const demoEmail = 'demo@test.com';
 
-        if (!demoUser) {
-            demoUser = new User({
-                _id: demoUserId,
-                email: 'demo@test.com',
-                phoneNumber: '9999999999',
-                name: 'Demo Student',
-                isEmailVerified: true,
-                isPhoneVerified: true,
-                city: 'Demo City',
-                gender: 'Male',
-                dob: new Date('1995-01-01'),
-                selectedCategory: 'CAT',
-                selectedExam: 'CAT 2025',
-                enrolledCourses: []
-            });
-            await demoUser.save();
-            console.log('✅ Demo user created');
-        }
+        let demoUser = await User.findOneAndUpdate(
+            { email: demoEmail },
+            {
+                $setOnInsert: {
+                    _id: demoUserId,
+                    email: demoEmail,
+                    phoneNumber: '9999999999',
+                    name: 'Demo Student',
+                    isEmailVerified: true,
+                    isPhoneVerified: true,
+                    city: 'Demo City',
+                    gender: 'Male',
+                    dob: new Date('1995-01-01'),
+                    selectedCategory: 'CAT',
+                    selectedExam: 'CAT 2025',
+                    enrolledCourses: []
+                }
+            },
+            { upsert: true, new: true }
+        );
+
+        console.log('✅ Demo user ready:', demoUser._id);
 
         // Check if course is already unlocked
         const existingCourse = demoUser.enrolledCourses.find(
