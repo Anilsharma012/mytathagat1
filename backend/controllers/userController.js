@@ -280,11 +280,19 @@ exports.getUnlockedCourses = async (req, res) => {
           }
         },
         { upsert: true, new: true }
-      );
+      ).populate('enrolledCourses.courseId');
+
       console.log('✅ Demo user ready with ID:', demoUser._id);
+      console.log('📚 Demo user enrolled courses:', demoUser.enrolledCourses);
+      console.log('📊 Total enrolled courses count:', demoUser.enrolledCourses.length);
 
       const unlockedCourses = demoUser.enrolledCourses
-        .filter(c => c.status === "unlocked" && c.courseId)
+        .filter(c => {
+          console.log('🔍 Checking course:', c);
+          console.log('   - Status:', c.status);
+          console.log('   - CourseId:', c.courseId);
+          return c.status === "unlocked" && c.courseId;
+        })
         .map(c => ({
           _id: c._id,
           status: c.status,
@@ -292,6 +300,8 @@ exports.getUnlockedCourses = async (req, res) => {
           courseId: c.courseId,
         }));
 
+      console.log('🎯 Filtered unlocked courses:', unlockedCourses);
+      console.log('📊 Returning courses count:', unlockedCourses.length);
       return res.status(200).json({ success: true, courses: unlockedCourses });
     }
 
