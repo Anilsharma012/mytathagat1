@@ -778,6 +778,180 @@ const loadMyCourses = async () => {
     { id: 'profile', label: 'Profile', icon: FiUser },
   ];
 
+  const renderPurchasesContent = () => {
+    // Load payment history when purchases section is accessed
+    React.useEffect(() => {
+      if (activeSection === 'purchases') {
+        loadPaymentHistory();
+        loadReceipts();
+      }
+    }, [activeSection]);
+
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR'
+      }).format(amount / 100); // Convert paise to rupees
+    };
+
+    const formatDate = (date) => {
+      return new Date(date).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    };
+
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'paid': return '#27ae60';
+        case 'created': return '#f39c12';
+        case 'failed': return '#e74c3c';
+        default: return '#7f8c8d';
+      }
+    };
+
+    return (
+      <div className="purchases-content">
+        <div className="section-header">
+          <h2>Purchase History</h2>
+          <p>View your course purchases and download receipts</p>
+        </div>
+
+        {/* Payment History Section */}
+        <div className="purchases-section">
+          <div className="section-title">
+            <h3>Payment History</h3>
+            {paymentHistoryLoading && <span className="loading-indicator">Loading...</span>}
+          </div>
+
+          {paymentHistory.length === 0 && !paymentHistoryLoading ? (
+            <div className="empty-state">
+              <FiFileText size={48} />
+              <h4>No Purchases Yet</h4>
+              <p>Your course purchases will appear here</p>
+            </div>
+          ) : (
+            <div className="purchases-grid">
+              {paymentHistory.map((payment) => (
+                <div key={payment._id} className="purchase-card">
+                  <div className="purchase-header">
+                    <div className="course-info">
+                      <h4>{payment.courseId?.name || 'Course'}</h4>
+                      <p>{payment.courseId?.description?.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+                    </div>
+                    <div className="purchase-status">
+                      <span
+                        className={`status-badge ${payment.status}`}
+                        style={{ backgroundColor: getStatusColor(payment.status) }}
+                      >
+                        {payment.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="purchase-details">
+                    <div className="detail-row">
+                      <span>Purchase Date:</span>
+                      <span>{formatDate(payment.createdAt)}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Amount Paid:</span>
+                      <span className="amount">{formatCurrency(payment.amount)}</span>
+                    </div>
+                    {payment.validityEndDate && (
+                      <div className="detail-row">
+                        <span>Valid Until:</span>
+                        <span>{formatDate(payment.validityEndDate)}</span>
+                      </div>
+                    )}
+                    {payment.receiptNumber && (
+                      <div className="detail-row">
+                        <span>Receipt No:</span>
+                        <span>{payment.receiptNumber}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {payment.status === 'paid' && (
+                    <div className="purchase-actions">
+                      <button
+                        className="download-btn"
+                        onClick={() => downloadReceipt(payment._id, 'html')}
+                      >
+                        <FiDownload /> Download Receipt
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Receipts Section */}
+        <div className="purchases-section">
+          <div className="section-title">
+            <h3>Receipts</h3>
+            {receiptsLoading && <span className="loading-indicator">Loading...</span>}
+          </div>
+
+          {receipts.length === 0 && !receiptsLoading ? (
+            <div className="empty-state">
+              <FiDownload size={48} />
+              <h4>No Receipts Available</h4>
+              <p>Receipts for successful payments will appear here</p>
+            </div>
+          ) : (
+            <div className="receipts-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Receipt No.</th>
+                    <th>Course</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Downloads</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipts.map((receipt) => (
+                    <tr key={receipt._id}>
+                      <td>{receipt.receiptNumber}</td>
+                      <td>{receipt.courseId?.name || 'Course'}</td>
+                      <td>{formatDate(receipt.generatedAt)}</td>
+                      <td>{formatCurrency(receipt.totalAmount)}</td>
+                      <td>{receipt.downloadCount}</td>
+                      <td>
+                        <div className="receipt-actions">
+                          <button
+                            className="download-btn small"
+                            onClick={() => downloadReceipt(receipt._id, 'html')}
+                            title="Download as HTML"
+                          >
+                            <FiDownload /> HTML
+                          </button>
+                          <button
+                            className="download-btn small"
+                            onClick={() => downloadReceipt(receipt._id, 'text')}
+                            title="Download as Text"
+                          >
+                            <FiFileText /> TXT
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderDashboardContent = () => (
     <div className="dashboard-content">
       <div className="dashboard-header">
