@@ -1,5 +1,5 @@
 // CoursePurchase.jsx
-import React,{useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import  {useNavigate} from "react-router-dom"
 import { useLocation } from "react-router-dom";
 import './CoursePurchase.css';
@@ -85,7 +85,7 @@ const CoursePurchase = () => {
   console.log('🔍 CoursePurchase rendered with course:', course);
 
   // Show warning if using fallback data
-  React.useEffect(() => {
+  useEffect(() => {
     if (!location.state) {
       console.warn('⚠️ No course data received from navigation, using fallback course');
     }
