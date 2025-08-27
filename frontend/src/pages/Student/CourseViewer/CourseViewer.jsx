@@ -86,99 +86,54 @@ const CourseViewer = () => {
 
   const loadCourseStructure = async () => {
     try {
-      // Load subjects for this course
       const token = localStorage.getItem('authToken');
-      const subjectsRes = await axios.get(`/api/subjects/${courseId}`, {
+
+      // Use the optimized student course structure endpoint
+      const structureRes = await axios.get(`/api/student/course/${courseId}/structure`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const subjectsData = subjectsRes.data.subjects || [];
-      
-      // For each subject, load chapters, topics, tests, and study materials
-      const courseStructure = [];
-      
-      for (const subject of subjectsData) {
-        const subjectNode = {
-          id: subject._id,
-          name: subject.name,
-          type: 'subject',
-          chapters: []
-        };
-        
-        // Load chapters for this subject
-        try {
-          const chaptersRes = await axios.get(`/api/chapters/${subject._id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const chapters = chaptersRes.data.chapters || [];
-          
-          for (const chapter of chapters) {
-            const chapterNode = {
-              id: chapter._id,
-              name: chapter.name,
-              type: 'chapter',
-              topics: []
-            };
-            
-            // Load topics for this chapter
-            try {
-              const topicsRes = await axios.get(`/api/topics/${chapter._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              const topics = topicsRes.data.topics || [];
-              
-              for (const topic of topics) {
-                const topicNode = {
-                  id: topic._id,
-                  name: topic.name,
-                  type: 'topic',
-                  tests: [],
-                  materials: []
-                };
-                
-                // Load tests for this topic
-                try {
-                  const testsRes = await axios.get(`/api/tests/${topic._id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                  });
-                  const tests = testsRes.data.tests || [];
-                  
-                  for (const test of tests) {
-                    topicNode.tests.push({
-                      id: test._id,
-                      name: test.title,
-                      type: 'test',
-                      duration: test.duration,
-                      totalMarks: test.totalMarks,
-                      instructions: test.instructions
-                    });
-                  }
-                } catch (testErr) {
-                  console.log(`No tests found for topic ${topic.name}`);
-                }
-                
-                chapterNode.topics.push(topicNode);
-              }
-            } catch (topicErr) {
-              console.log(`No topics found for chapter ${chapter.name}`);
-            }
-            
-            subjectNode.chapters.push(chapterNode);
-          }
-        } catch (chapterErr) {
-          console.log(`No chapters found for subject ${subject.name}`);
-        }
-        
-        courseStructure.push(subjectNode);
+
+      if (!structureRes.data.success) {
+        throw new Error(structureRes.data.message || 'Failed to load course structure');
       }
-      
-      // Also load study materials for this course
+
+      const { structure, course } = structureRes.data;
+
+      // Transform the structure to match the expected format
+      const courseStructure = structure.map(subject => ({
+        id: subject._id,
+        name: subject.name,
+        type: 'subject',
+        chapters: subject.chapters.map(chapter => ({
+          id: chapter._id,
+          name: chapter.name,
+          type: 'chapter',
+          topics: chapter.topics.map(topic => ({
+            id: topic._id,
+            name: topic.name,
+            type: 'topic',
+            tests: topic.tests.map(test => ({
+              id: test._id,
+              name: test.title || test.name,
+              type: 'test',
+              duration: test.duration,
+              totalMarks: test.totalMarks,
+              instructions: test.instructions
+            })),
+            materials: []
+          }))
+        })),
+        materials: []
+      }));
+
+      // Load study materials for this course
       try {
         const materialsRes = await axios.get(`/api/study-materials/student?courseId=${courseId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const materials = materialsRes.data.materials || [];
-        
-        // Organize materials by subject/chapter if possible, or add to general section
+
+        // Add materials to the first subject or create a general section
         materials.forEach(material => {
           const materialNode = {
             id: material._id,
@@ -188,8 +143,8 @@ const CourseViewer = () => {
             fileSize: material.fileSize,
             downloadUrl: `/api/study-materials/download/${material._id}`
           };
-          
-          // For now, add materials to first subject or create a general section
+
+          // Add to first subject if available
           if (courseStructure.length > 0) {
             if (!courseStructure[0].materials) {
               courseStructure[0].materials = [];
@@ -200,12 +155,13 @@ const CourseViewer = () => {
       } catch (materialErr) {
         console.log('No study materials found for this course');
       }
-      
+
       setCourseContent(courseStructure);
-      setSubjects(subjectsData);
-      
+      setSubjects(structure); // Set the original structure for reference
+
     } catch (err) {
       console.error('Error loading course structure:', err);
+      throw err; // Re-throw to be handled by parent function
     }
   };
 
