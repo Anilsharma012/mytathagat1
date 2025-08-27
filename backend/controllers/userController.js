@@ -552,6 +552,91 @@ exports.verifyAndUnlockPayment = async (req, res) => {
 
 
 
+// Get user's payment history
+exports.getPaymentHistory = async (req, res) => {
+  try {
+    const payments = await Payment.getUserPayments(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      payments: payments,
+      count: payments.length
+    });
+  } catch (err) {
+    console.error("❌ Get payment history error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment history",
+      error: err.message
+    });
+  }
+};
+
+// Get user's receipts
+exports.getUserReceipts = async (req, res) => {
+  try {
+    const receipts = await Receipt.getUserReceipts(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      receipts: receipts,
+      count: receipts.length
+    });
+  } catch (err) {
+    console.error("❌ Get user receipts error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch receipts",
+      error: err.message
+    });
+  }
+};
+
+// Download specific receipt
+exports.downloadReceipt = async (req, res) => {
+  try {
+    const { receiptId } = req.params;
+
+    const receipt = await Receipt.findById(receiptId)
+      .populate('paymentId')
+      .populate('courseId', 'name description price');
+
+    if (!receipt) {
+      return res.status(404).json({
+        success: false,
+        message: "Receipt not found"
+      });
+    }
+
+    // Verify ownership
+    if (receipt.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied"
+      });
+    }
+
+    // Mark as downloaded
+    await receipt.markAsDownloaded();
+
+    // Return receipt data (frontend can generate PDF)
+    const receiptData = receipt.getReceiptData();
+
+    res.status(200).json({
+      success: true,
+      receipt: receiptData,
+      downloadCount: receipt.downloadCount
+    });
+  } catch (err) {
+    console.error("❌ Download receipt error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to download receipt",
+      error: err.message
+    });
+  }
+};
+
 exports.verifyToken = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
