@@ -260,24 +260,28 @@ exports.getUnlockedCourses = async (req, res) => {
     if (process.env.NODE_ENV === 'development' || userId === '507f1f77bcf86cd799439011') {
       console.log('🔧 Development mode - handling demo user');
 
-      let demoUser = await User.findOne({ email: 'demo@test.com' });
-      if (!demoUser) {
-        demoUser = new User({
-          email: 'demo@test.com',
-          phoneNumber: '9999999999',
-          name: 'Demo Student',
-          isEmailVerified: true,
-          isPhoneVerified: true,
-          city: 'Demo City',
-          gender: 'Male',
-          dob: new Date('1995-01-01'),
-          selectedCategory: 'CAT',
-          selectedExam: 'CAT 2025',
-          enrolledCourses: []
-        });
-        await demoUser.save();
-        console.log('✅ Demo user created with ID:', demoUser._id);
-      }
+      // Use atomic upsert to avoid race conditions
+      const demoEmail = 'demo@test.com';
+      let demoUser = await User.findOneAndUpdate(
+        { email: demoEmail },
+        {
+          $setOnInsert: {
+            email: demoEmail,
+            phoneNumber: '9999999999',
+            name: 'Demo Student',
+            isEmailVerified: true,
+            isPhoneVerified: true,
+            city: 'Demo City',
+            gender: 'Male',
+            dob: new Date('1995-01-01'),
+            selectedCategory: 'CAT',
+            selectedExam: 'CAT 2025',
+            enrolledCourses: []
+          }
+        },
+        { upsert: true, new: true }
+      );
+      console.log('✅ Demo user ready with ID:', demoUser._id);
 
       const unlockedCourses = demoUser.enrolledCourses
         .filter(c => c.status === "unlocked" && c.courseId)
