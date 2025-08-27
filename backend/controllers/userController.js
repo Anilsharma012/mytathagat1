@@ -602,7 +602,10 @@ exports.verifyAndUnlockPayment = async (req, res) => {
       }
 
       // Add course to enrolled courses
+      console.log('🔍 Current enrolled courses before adding:', user.enrolledCourses);
       const existingCourse = user.enrolledCourses.find(c => c.courseId && c.courseId.toString() === courseId);
+      console.log('🔍 Looking for existing course with ID:', courseId);
+      console.log('🔍 Existing course found:', existingCourse);
 
       if (!existingCourse) {
         user.enrolledCourses.push({
@@ -612,6 +615,7 @@ exports.verifyAndUnlockPayment = async (req, res) => {
         });
         await user.save();
         console.log('✅ Course unlocked for user:', user._id);
+        console.log('📚 Updated enrolled courses:', user.enrolledCourses);
       } else {
         console.log('ℹ️ Course already unlocked for user');
       }
