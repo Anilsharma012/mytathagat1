@@ -87,7 +87,10 @@ const CourseViewer = () => {
   const loadCourseStructure = async () => {
     try {
       // Load subjects for this course
-      const subjectsRes = await axios.get(`/api/subjects/${courseId}`);
+      const token = localStorage.getItem('authToken');
+      const subjectsRes = await axios.get(`/api/subjects/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const subjectsData = subjectsRes.data.subjects || [];
       
       // For each subject, load chapters, topics, tests, and study materials
@@ -103,7 +106,9 @@ const CourseViewer = () => {
         
         // Load chapters for this subject
         try {
-          const chaptersRes = await axios.get(`/api/chapters/${subject._id}`);
+          const chaptersRes = await axios.get(`/api/chapters/${subject._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           const chapters = chaptersRes.data.chapters || [];
           
           for (const chapter of chapters) {
@@ -116,7 +121,9 @@ const CourseViewer = () => {
             
             // Load topics for this chapter
             try {
-              const topicsRes = await axios.get(`/api/topics/${chapter._id}`);
+              const topicsRes = await axios.get(`/api/topics/${chapter._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
               const topics = topicsRes.data.topics || [];
               
               for (const topic of topics) {
@@ -130,7 +137,9 @@ const CourseViewer = () => {
                 
                 // Load tests for this topic
                 try {
-                  const testsRes = await axios.get(`/api/tests/${topic._id}`);
+                  const testsRes = await axios.get(`/api/tests/${topic._id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
                   const tests = testsRes.data.tests || [];
                   
                   for (const test of tests) {
@@ -164,7 +173,9 @@ const CourseViewer = () => {
       
       // Also load study materials for this course
       try {
-        const materialsRes = await axios.get(`/api/study-materials/student?courseId=${courseId}`);
+        const materialsRes = await axios.get(`/api/study-materials/student?courseId=${courseId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         const materials = materialsRes.data.materials || [];
         
         // Organize materials by subject/chapter if possible, or add to general section
