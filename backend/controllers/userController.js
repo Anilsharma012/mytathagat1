@@ -367,24 +367,58 @@ exports.getUnlockedCourses = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, courseId } = req.body;
 
-    if (!amount) {
-      return res.status(400).json({ success: false, message: "Amount is required" });
+    if (!amount || !courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount and courseId are required"
+      });
+    }
+
+    // Verify course exists
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found"
+      });
     }
 
     const options = {
-      amount: amount, // Amount in paise (3000000 = ₹30,000)
+      amount: amount, // Amount in paise
       currency: "INR",
-      receipt: `receipt_${Date.now()}`
+      receipt: `receipt_${Date.now()}_${courseId.substr(-6)}`
     };
 
     const order = await razorpayInstance.orders.create(options);
 
-    res.status(200).json({ success: true, order });
+    // Save payment record in database
+    const payment = new Payment({
+      userId: req.user.id,
+      courseId: courseId,
+      razorpay_order_id: order.id,
+      amount: amount,
+      currency: "INR",
+      status: "created",
+      originalAmount: amount, // Store original amount
+    });
+
+    await payment.save();
+    console.log("✅ Payment record created:", payment._id);
+
+    res.status(200).json({
+      success: true,
+      order: order,
+      paymentId: payment._id
+    });
   } catch (err) {
     console.error("❌ Create order error:", err);
-    res.status(500).json({ success: false, message: "Failed to create order" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to create order",
+      error: err.message
+    });
   }
 };
 
