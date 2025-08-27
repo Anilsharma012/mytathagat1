@@ -76,6 +76,12 @@ const StudentDashboard = () => {
   const [myCourses, setMyCourses] = useState([]);
   const [myCoursesLoading, setMyCoursesLoading] = useState(false);
 
+  // Payment History and Receipts state
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [receipts, setReceipts] = useState([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(false);
+
   // Study Materials state
   const [studyMaterials, setStudyMaterials] = useState([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
