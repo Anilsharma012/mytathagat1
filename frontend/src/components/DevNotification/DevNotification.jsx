@@ -25,6 +25,28 @@ const DevNotification = () => {
     }
   };
 
+  const handleStudentLogin = async () => {
+    try {
+      const response = await fetch('/api/dev/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        alert('✅ Logged in as ' + data.user.name);
+        window.location.href = '/student/dashboard';
+      } else {
+        alert('❌ Login failed');
+      }
+    } catch (error) {
+      alert('❌ Login error: ' + error.message);
+    }
+  };
+
   const getStatusMessage = () => {
     switch (backendStatus) {
       case 'connected':
@@ -61,12 +83,20 @@ const DevNotification = () => {
         <span className="dev-notification__text">
           Development Mode: {getStatusMessage()}
         </span>
-        <button 
+        <button
           className="dev-notification__retry"
           onClick={checkBackendStatus}
           title="Retry backend connection"
         >
           🔄
+        </button>
+        <button
+          className="dev-notification__retry"
+          onClick={handleStudentLogin}
+          title="Quick Student Login"
+          style={{ marginLeft: '5px', backgroundColor: '#4CAF50' }}
+        >
+          👤
         </button>
         <button 
           className="dev-notification__close"

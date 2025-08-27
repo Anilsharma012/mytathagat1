@@ -8,52 +8,53 @@ const Question = require("../models/test/Question");
 const createQuestion = async (req, res) => {
   try {
     const {
-      test,
+      testId,
       questionText,
-      direction,
       options,
-      correctOptionIndex,
+      correctOption,
+      explanation,
+      difficulty,
       marks,
       negativeMarks,
-      explanation,
-      type,
-      order
+      isActive
     } = req.body;
 
     // ✅ Validate required fields
     if (
-      !test ||
+      !testId ||
       !questionText ||
       !options ||
-      !Array.isArray(options) ||
-      options.length < 2 ||
-      correctOptionIndex === undefined
+      !options.A ||
+      !options.B ||
+      !options.C ||
+      !options.D ||
+      !correctOption
     ) {
       return res.status(400).json({
         success: false,
-        message: "Required fields missing or invalid: test, questionText, options[2+], correctOptionIndex"
+        message: "Required fields missing: testId, questionText, options.A/B/C/D, correctOption"
       });
     }
 
-    // ✅ Validate correctOptionIndex
-    if (correctOptionIndex >= options.length || correctOptionIndex < 0) {
+    // ✅ Validate correctOption
+    if (!["A", "B", "C", "D"].includes(correctOption)) {
       return res.status(400).json({
         success: false,
-        message: "Correct option index must be within options range"
+        message: "Correct option must be A, B, C, or D"
       });
     }
 
     const question = new Question({
-      test,
+      testId,
+      test: testId, // for backward compatibility
       questionText,
-      direction,
       options,
-      correctOptionIndex,
-      marks,
-      negativeMarks,
-      explanation,
-      type,
-      order
+      correctOption,
+      explanation: explanation || "",
+      difficulty: difficulty || "Medium",
+      marks: marks || 2,
+      negativeMarks: negativeMarks || 0.66,
+      isActive: isActive !== undefined ? isActive : true
     });
 
     await question.save();
@@ -70,13 +71,22 @@ const createQuestion = async (req, res) => {
 // ✅ Get All Questions for a Test
 const getQuestionsByTest = async (req, res) => {
   try {
-    const { testId } = req.params;
+    // Support both query parameter (?testId=) and path parameter (/:testId)
+    const testId = req.query.testId || req.params.testId;
+
+    if (!testId) {
+      return res.status(400).json({ success: false, message: "Test ID is required" });
+    }
 
     if (!mongoose.Types.ObjectId.isValid(testId)) {
       return res.status(400).json({ success: false, message: "Invalid test ID" });
     }
 
-    const questions = await Question.find({ test: testId }).sort({ order: 1 });
+    // Search by both testId and test for backward compatibility
+    const questions = await Question.find({
+      $or: [{ testId: testId }, { test: testId }]
+    }).sort({ createdAt: 1 });
+
     res.status(200).json({ success: true, questions });
 
   } catch (err) {

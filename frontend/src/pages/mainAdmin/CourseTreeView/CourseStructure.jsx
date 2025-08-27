@@ -175,30 +175,65 @@ const TestList = ({ topicId }) => {
               ❌
             </button>
             <div className="tz-question-scroll">
-              {questions.map((q, idx) => (
-                <div key={q._id} className="tz-question-block">
-                  <div className="tz-question-text">
-                    <strong>Q{idx + 1}:</strong>{" "}
-                    <span dangerouslySetInnerHTML={{ __html: q.questionText }} />
-                  </div>
-                  {q.image && <img src={`/uploads/${q.image}`} alt="question-img" className="tz-question-image" />}
-                  <ul className="tz-options-list">
-                    {q.options.map((opt, i) => (
-                      <li
-                        key={i}
-                        className={`tz-option-item ${q.correctOptionIndex === i ? "correct" : ""}`}
-                      >
-                        {i + 1}. {opt}
-                      </li>
-                    ))}
-                  </ul>
-                  {q.explanation && (
-                    <div className="tz-explanation">
-                      <strong>Explanation:</strong> {q.explanation}
+              {questions.length > 0 ? questions.map((q, idx) => {
+                // Safety check for question object
+                if (!q || !q._id) {
+                  return (
+                    <div key={`error-${idx}`} className="tz-question-block">
+                      <div className="tz-question-text" style={{color: "#ff6b6b"}}>
+                        ⚠️ Question data is malformed
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+
+                return (
+                  <div key={q._id} className="tz-question-block">
+                    <div className="tz-question-text">
+                      <strong>Q{idx + 1}:</strong>{" "}
+                      <span dangerouslySetInnerHTML={{ __html: q.questionText || "No question text" }} />
+                    </div>
+                    {q.image && <img src={`/uploads/${q.image}`} alt="question-img" className="tz-question-image" />}
+                    <ul className="tz-options-list">
+                      {q.options && typeof q.options === 'object' && !Array.isArray(q.options) ? (
+                        // Handle new object-based options format {A: "text", B: "text", ...}
+                        Object.entries(q.options).map(([key, value]) => (
+                          <li
+                            key={key}
+                            className={`tz-option-item ${q.correctOption === key ? "correct" : ""}`}
+                          >
+                            {key}. <span dangerouslySetInnerHTML={{ __html: value || "No option text" }} />
+                          </li>
+                        ))
+                      ) : q.options && Array.isArray(q.options) ? (
+                        // Handle legacy array-based options format ["text1", "text2", ...]
+                        q.options.map((opt, i) => (
+                          <li
+                            key={i}
+                            className={`tz-option-item ${q.correctOptionIndex === i ? "correct" : ""}`}
+                          >
+                            {i + 1}. <span dangerouslySetInnerHTML={{ __html: opt || "No option text" }} />
+                          </li>
+                        ))
+                      ) : (
+                        <li className="tz-option-item">No options available</li>
+                      )}
+                    </ul>
+                    {q.explanation && (
+                      <div className="tz-explanation">
+                        <strong>Explanation:</strong>{" "}
+                        <span dangerouslySetInnerHTML={{ __html: q.explanation }} />
+                      </div>
+                    )}
+                    {/* Debug info */}
+                    <div style={{fontSize: "10px", color: "#888", marginTop: "5px"}}>
+                      Difficulty: {q.difficulty || "N/A"} | Marks: {q.marks || "N/A"}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="tz-no-questions">No questions found for this test.</div>
+              )}
             </div>
           </div>
         </div>

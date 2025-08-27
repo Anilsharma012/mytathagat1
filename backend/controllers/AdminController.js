@@ -15,9 +15,8 @@ exports.createAdmin = async (req, res) => {
       return res.status(400).json({ message: "Admin already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10); // ✅ Hash here
-
-    const admin = new Admin({ email, password: hashedPassword }); // ✅ Save hashed
+    // No manual hashing - let the pre-save middleware handle it
+    const admin = new Admin({ email, password });
     await admin.save();
 
     res.status(201).json({ message: "Admin created successfully" });
